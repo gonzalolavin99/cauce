@@ -1,59 +1,26 @@
-import React from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Link, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
+import { useAuth } from "@/src/features/auth/hooks/useAuth";
+import { useProfile } from "@/src/features/profile/hooks/useProfile";
+import { Redirect, Tabs } from "expo-router";
 
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+export default function TabsLayout() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { data: profile, isLoading: profileLoading } = useProfile();
 
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
-  color: string;
-}) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
-}
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  if (authLoading || profileLoading) return null;
+  if (!isAuthenticated) return <Redirect href="/(auth)/sign-in" />;
+  if (profile && !profile.onboarding_completed) {
+    return <Redirect href="/(onboarding)/welcome" />;
+  }
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable>
-                {({ pressed }) => (
-                  <FontAwesome
-                    name="info-circle"
-                    size={25}
-                    color={Colors[colorScheme ?? 'light'].text}
-                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="two"
-        options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-        }}
-      />
+        headerShown: false,
+        tabBarActiveTintColor: "#4E8B8C",
+      }}
+    >
+      <Tabs.Screen name="index" options={{ title: "Inicio" }} />
+      <Tabs.Screen name="explore" options={{ title: "Explorar" }} />
     </Tabs>
   );
 }
