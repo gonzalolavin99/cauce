@@ -21,6 +21,8 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="index" options={{ title: "Inicio" }} />
       <Tabs.Screen name="explore" options={{ title: "Explorar" }} />
+      <Tabs.Screen name="support" options={{ title: "Apoyo" }} />
+      <Tabs.Screen name="profile" options={{ title: "Perfil" }} />
     </Tabs>
   );
 }
