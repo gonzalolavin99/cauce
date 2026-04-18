@@ -3,10 +3,7 @@ import { supabase } from "@/src/shared/lib/supabase";
 import type { Diagnosis, Mobility } from "@/src/types/database.types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-/**
- * Actualiza campos básicos del profile (display_name, etc.).
- * No toca onboarding_completed — ese flag solo se setea en el flujo de onboarding.
- */
+
 export function useUpdateProfile() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -25,9 +22,7 @@ export function useUpdateProfile() {
   });
 }
 
-/**
- * Reemplaza todos los diagnósticos del usuario (delete + insert).
- */
+
 export function useUpdateDiagnoses() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -68,9 +63,7 @@ interface PreferencesPatch {
   prefers_haptics?: boolean;
 }
 
-/**
- * Actualiza sensory_preferences — cualquier subset de campos.
- */
+
 export function useUpdatePreferences() {
   const { user } = useAuth();
   const queryClient = useQueryClient();

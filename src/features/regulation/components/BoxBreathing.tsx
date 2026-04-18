@@ -32,10 +32,7 @@ interface BoxBreathingProps {
   onCancel?: () => void;
 }
 
-/**
- * Box breathing 4-4-4-4 — usado como fallback cuando el ejercicio de la BD
- * no tiene `steps` válidos. Internamente delega el dibujo al BreathingCircle.
- */
+
 export function BoxBreathing({
   phaseSeconds = 4,
   cycles = 4,

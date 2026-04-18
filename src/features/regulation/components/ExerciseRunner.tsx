@@ -14,7 +14,6 @@ interface ExerciseRunnerProps {
   onCancel?: () => void;
 }
 
-// Palabras típicas en ejercicios de respiración para decidir si expande o contrae
 const INHALE_KEYWORDS = ["inhala", "inhalar", "inspira", "inspirar"];
 const EXHALE_KEYWORDS = ["exhala", "exhalar", "espira", "espirar", "suelta"];
 
@@ -22,7 +21,6 @@ function phaseScale(label: string, prevScale: number): number {
   const lower = label.toLowerCase();
   if (INHALE_KEYWORDS.some((k) => lower.includes(k))) return 1.6;
   if (EXHALE_KEYWORDS.some((k) => lower.includes(k))) return 1;
-  // hold → mantener la escala anterior
   return prevScale;
 }
 
@@ -56,7 +54,6 @@ export function ExerciseRunner({
 
   const step = steps[stepIndex];
 
-  // Cleanup al desmontar
   useEffect(() => {
     return () => {
       Speech.stop();
@@ -64,7 +61,6 @@ export function ExerciseRunner({
     };
   }, []);
 
-  // Efecto principal: cada vez que cambia el step o fase del ciclo, disparamos timer
   useEffect(() => {
     if (!step) return;
 
@@ -77,7 +73,6 @@ export function ExerciseRunner({
       if (withHaptics) haptic("light");
       if (withVoice) speak(phase.label);
 
-      // Actualizar escala para que BreathingCircle la reciba
       setLastScale((prev) => phaseScale(phase.label, prev));
 
       timerRef.current = setTimeout(() => {
@@ -95,7 +90,6 @@ export function ExerciseRunner({
         }
       }, phase.seconds * 1000);
     } else {
-      // intro | prompt | outro
       if (withHaptics) haptic("light");
       if (withVoice) speak(step.text);
 
@@ -136,7 +130,6 @@ export function ExerciseRunner({
     );
   }
 
-  // --- Render según tipo de paso ---
   if (step.type === "cycle") {
     const phase = step.phases[cyclePhaseIndex];
     const label = phase?.label ?? "";
@@ -174,7 +167,6 @@ export function ExerciseRunner({
     );
   }
 
-  // intro | prompt | outro → texto grande con temporizador
   return (
     <View className="flex-1 items-center justify-center px-6">
       <Text className="text-sm text-river-700 uppercase mb-4">
