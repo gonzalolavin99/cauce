@@ -469,7 +469,17 @@ export const Constants = {
   },
 } as const
 
-export type Diagnosis = "tea" | "tdah" | "ansiedad" | "otro" | "ninguno";
+export type Diagnosis =
+  | "tea"
+  | "tdah"
+  | "ansiedad"
+  | "depresion"
+  | "borderline"
+  | "bipolar"
+  | "trauma"
+  | "toc"
+  | "otro"
+  | "ninguno";
 export type Feeling = "sobrecargado" | "ansioso" | "agitado" | "bloqueado";
 export type Mobility = "still" | "seated" | "any";
 export type EvidenceLevel = "high" | "moderate" | "emerging";

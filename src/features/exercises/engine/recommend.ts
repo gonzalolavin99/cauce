@@ -29,6 +29,11 @@ const DIAGNOSIS_CATEGORY_HINTS: Record<Diagnosis, string[]> = {
   ansiedad: ["breathing", "grounding"],
   tdah: ["body", "sensory", "breathing"],
   tea: ["sensory", "grounding"],
+  depresion: ["body", "grounding"],
+  borderline: ["distress_tolerance", "grounding", "breathing"],
+  bipolar: ["grounding", "breathing"],
+  trauma: ["grounding", "sensory", "body"],
+  toc: ["distress_tolerance", "grounding"],
   otro: [],
   ninguno: [],
 };

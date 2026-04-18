@@ -44,6 +44,10 @@ export default function RootLayout() {
             name="regulate"
             options={{ presentation: "modal", gestureEnabled: false }}
           />
+          <Stack.Screen
+            name="mood"
+            options={{ presentation: "modal" }}
+          />
           <Stack.Screen name="+not-found" />
         </Stack>
       </ThemeProvider>

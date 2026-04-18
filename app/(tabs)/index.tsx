@@ -1,5 +1,11 @@
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { useRecommendedExercises } from "@/src/features/exercises/hooks/useRecommendedExercises";
+import {
+  MOOD_EMOJI,
+  MOOD_LABELS,
+  type MoodValue,
+} from "@/src/features/mood/data/options";
+import { useMoodLogs } from "@/src/features/mood/hooks/useMoodLogs";
 import { useProfile } from "@/src/features/profile/hooks/useProfile";
 import { cn } from "@/src/shared/lib/cn";
 import { Screen } from "@/src/shared/ui/Screen";
@@ -26,6 +32,8 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const { data: profile } = useProfile();
   const { ranked, isLoading } = useRecommendedExercises();
+  const { data: moodLogs } = useMoodLogs(1);
+  const lastMood = moodLogs?.[0];
 
   const displayName = useMemo(() => {
     if (profile?.display_name) return profile.display_name;
@@ -44,6 +52,20 @@ export default function HomeScreen() {
     Haptics.selectionAsync().catch(() => {});
     router.push({ pathname: "/regulate", params: { exerciseId } });
   }
+
+  function handleMoodPress() {
+    Haptics.selectionAsync().catch(() => {});
+    router.push("/mood");
+  }
+
+  const lastMoodInfo = useMemo(() => {
+    if (!lastMood?.mood) return null;
+    const moodKey = lastMood.mood as MoodValue;
+    return {
+      emoji: MOOD_EMOJI[moodKey] ?? "·",
+      label: MOOD_LABELS[moodKey] ?? lastMood.mood,
+    };
+  }, [lastMood]);
 
   return (
     <Screen>
@@ -68,6 +90,27 @@ export default function HomeScreen() {
           <Text className="text-white/80 text-base text-center mt-3">
             Un ejercicio corto, ahora
           </Text>
+        </Pressable>
+
+        {/* Mood logger */}
+        <Pressable
+          onPress={handleMoodPress}
+          className="mt-6 p-4 rounded-2xl bg-sand border border-river-100 active:bg-river-50 flex-row items-center"
+        >
+          <Text className="text-3xl mr-3">
+            {lastMoodInfo?.emoji ?? "📝"}
+          </Text>
+          <View className="flex-1">
+            <Text className="text-base font-semibold text-ink">
+              {lastMoodInfo ? "¿Cómo estás ahora?" : "¿Cómo estás?"}
+            </Text>
+            <Text className="text-sm text-ink/60 mt-0.5">
+              {lastMoodInfo
+                ? `Último: ${lastMoodInfo.label.toLowerCase()}`
+                : "Anota tu estado en segundos"}
+            </Text>
+          </View>
+          <Text className="text-river-700 text-xl">›</Text>
         </Pressable>
 
         {/* Sesiones rápidas */}

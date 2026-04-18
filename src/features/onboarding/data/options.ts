@@ -4,6 +4,11 @@ export const DIAGNOSIS_OPTIONS: { value: Diagnosis; label: string; hint?: string
   { value: "tdah", label: "TDAH", hint: "Déficit atencional" },
   { value: "tea", label: "TEA", hint: "Autismo" },
   { value: "ansiedad", label: "Ansiedad" },
+  { value: "depresion", label: "Depresión" },
+  { value: "borderline", label: "TLP", hint: "Límite de personalidad" },
+  { value: "bipolar", label: "Bipolar", hint: "Trastorno bipolar" },
+  { value: "trauma", label: "Trauma / TEPT", hint: "Postraumático" },
+  { value: "toc", label: "TOC", hint: "Obsesivo-compulsivo" },
   { value: "otro", label: "Otro" },
   { value: "ninguno", label: "Ninguno / no lo sé" },
 ];
