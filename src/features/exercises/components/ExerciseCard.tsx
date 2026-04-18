@@ -2,7 +2,11 @@ import {
   CATEGORY_LABELS,
   EVIDENCE_LABELS,
 } from "@/src/features/exercises/data/labels";
-import type { Exercise } from "@/src/types/database.types";
+import type {
+  EvidenceLevel,
+  Exercise,
+  ExerciseCategory,
+} from "@/src/types/database.types";
 import { Pressable, Text, View } from "react-native";
 
 interface ExerciseCardProps {
@@ -12,8 +16,10 @@ interface ExerciseCardProps {
 
 export function ExerciseCard({ exercise, onPress }: ExerciseCardProps) {
   const minutes = Math.max(1, Math.round(exercise.duration_seconds / 60));
-  const categoryLabel = CATEGORY_LABELS[exercise.category];
-  const evidenceLabel = EVIDENCE_LABELS[exercise.evidence_level];
+  const category = (exercise.category ?? "breathing") as ExerciseCategory;
+  const evidence = (exercise.evidence_level ?? "emerging") as EvidenceLevel;
+  const categoryLabel = CATEGORY_LABELS[category];
+  const evidenceLabel = EVIDENCE_LABELS[evidence];
 
   return (
     <Pressable
