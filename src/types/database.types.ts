@@ -73,6 +73,51 @@ export type Database = {
         }
         Relationships: []
       }
+      crisis_plans: {
+        Row: {
+          user_id: string
+          warning_signs: string | null
+          what_helps: string | null
+          anchor_phrase: string | null
+          safe_place: string | null
+          trusted_contact_name: string | null
+          trusted_contact_phone: string | null
+          trusted_contact_relation: string | null
+          reasons_to_stay: string | null
+          avoid_list: string | null
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          warning_signs?: string | null
+          what_helps?: string | null
+          anchor_phrase?: string | null
+          safe_place?: string | null
+          trusted_contact_name?: string | null
+          trusted_contact_phone?: string | null
+          trusted_contact_relation?: string | null
+          reasons_to_stay?: string | null
+          avoid_list?: string | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          warning_signs?: string | null
+          what_helps?: string | null
+          anchor_phrase?: string | null
+          safe_place?: string | null
+          trusted_contact_name?: string | null
+          trusted_contact_phone?: string | null
+          trusted_contact_relation?: string | null
+          reasons_to_stay?: string | null
+          avoid_list?: string | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_messages: {
         Row: {
           content: string
@@ -547,3 +592,4 @@ export type Exercise = Database["public"]["Tables"]["exercises"]["Row"];
 export type RegulationSession =
   Database["public"]["Tables"]["regulation_sessions"]["Row"];
 export type MoodLog = Database["public"]["Tables"]["mood_logs"]["Row"];
+export type CrisisPlan = Database["public"]["Tables"]["crisis_plans"]["Row"];

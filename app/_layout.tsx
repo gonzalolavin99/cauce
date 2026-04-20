@@ -61,6 +61,10 @@ export default function RootLayout() {
             options={{ presentation: "modal" }}
           />
           <Stack.Screen
+            name="crisis-plan"
+            options={{ presentation: "modal" }}
+          />
+          <Stack.Screen
             name="consent-update"
             options={{ gestureEnabled: false }}
           />

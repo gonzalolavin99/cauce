@@ -6,6 +6,10 @@ import {
 } from "@/src/features/ai-advisor/hooks/useAiConversation";
 import { useSendMessage } from "@/src/features/ai-advisor/hooks/useSendMessage";
 import {
+  isCrisisPlanUseful,
+  useCrisisPlan,
+} from "@/src/features/crisis/hooks/useCrisisPlan";
+import {
   CONSENT_DESCRIPTIONS,
   CONSENT_LABELS,
 } from "@/src/features/privacy/constants";
@@ -169,6 +173,8 @@ function ChatBody({ onClose }: { onClose: () => void }) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const { data: messages, isLoading } = useMessages(conversationId);
   const sendMessage = useSendMessage();
+  const { data: crisisPlan } = useCrisisPlan();
+  const hasCrisisPlan = isCrisisPlanUseful(crisisPlan);
 
   const [input, setInput] = useState("");
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(
@@ -326,14 +332,29 @@ function ChatBody({ onClose }: { onClose: () => void }) {
               Si estás en una crisis, te recomendamos ir a Apoyo ahora. El
               asistente puede acompañar pero no reemplaza ayuda especializada.
             </Text>
-            <Pressable
-              onPress={handleGoToSupport}
-              className="px-3 py-2 rounded-xl bg-alert self-start"
-            >
-              <Text className="text-white text-sm font-semibold">
-                Ir a Apoyo
-              </Text>
-            </Pressable>
+            <View className="flex-row gap-2">
+              <Pressable
+                onPress={handleGoToSupport}
+                className="px-3 py-2 rounded-xl bg-alert"
+              >
+                <Text className="text-white text-sm font-semibold">
+                  Ir a Apoyo
+                </Text>
+              </Pressable>
+              {hasCrisisPlan && (
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync().catch(() => {});
+                    router.push("/crisis-plan");
+                  }}
+                  className="px-3 py-2 rounded-xl bg-white border border-alert/40"
+                >
+                  <Text className="text-alert text-sm font-semibold">
+                    Ver mi plan
+                  </Text>
+                </Pressable>
+              )}
+            </View>
           </View>
         )}
 
