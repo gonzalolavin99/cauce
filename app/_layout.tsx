@@ -1,26 +1,21 @@
 import { useColorScheme } from "@/components/useColorScheme";
 import { useScheduleNotifications } from "@/src/features/notifications/hooks/useScheduleNotifications";
+import {
+  addTapListener,
+  configureForegroundBehavior,
+} from "@/src/features/notifications/service";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
-import * as Notifications from "expo-notifications";
 import { Stack, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import "react-native-reanimated";
 import "../global.css";
 
-// Cómo se presentan las notificaciones cuando la app está en foreground.
-// Sin banner ni sound acá: no queremos interrumpir si la persona ya está
-// en la app. Si está en background el sistema las muestra normalmente.
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: false,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
+// Configura el comportamiento en foreground. Si expo-notifications no
+// está disponible (Expo Go), el helper es no-op.
+configureForegroundBehavior();
 
 SplashScreen.preventAutoHideAsync();
 
@@ -43,19 +38,10 @@ function NotificationController() {
   useScheduleNotifications();
 
   useEffect(() => {
-    const sub = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        const data = response.notification.request.content.data as
-          | { route?: string }
-          | null
-          | undefined;
-        const route = data?.route;
-        if (typeof route === "string" && route.startsWith("/")) {
-          // @ts-expect-error — expo-router typed routes no reconocen string dinámico
-          router.push(route);
-        }
-      }
-    );
+    const sub = addTapListener((route) => {
+      // @ts-expect-error — expo-router typed routes no reconocen string dinámico
+      router.push(route);
+    });
     return () => sub.remove();
   }, [router]);
 

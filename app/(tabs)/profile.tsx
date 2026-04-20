@@ -9,6 +9,7 @@ import {
   ensureAndroidChannel,
   ensureNotificationPermission,
   hasNotificationPermission,
+  isNotificationsAvailable,
 } from "@/src/features/notifications/service";
 import {
   CALMING_INPUTS,
@@ -409,7 +410,17 @@ export default function ProfileScreen() {
             defecto — eliges qué te hace sentido.
           </Text>
 
-          {notifPermissionGranted === false && (
+          {!isNotificationsAvailable() && (
+            <View className="mb-4 p-3 rounded-xl bg-sand border border-river-100">
+              <Text className="text-xs text-ink/70 leading-4">
+                Las notificaciones requieren una versión de desarrollo de la
+                app (dev build). En la versión actual puedes guardar tus
+                preferencias, pero los recordatorios no se programan todavía.
+              </Text>
+            </View>
+          )}
+
+          {isNotificationsAvailable() && notifPermissionGranted === false && (
             <View className="mb-4 p-3 rounded-xl bg-sand border border-river-100">
               <Text className="text-xs text-ink/70">
                 No tenemos permiso de notificaciones. Al activar un
