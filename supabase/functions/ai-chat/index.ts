@@ -18,8 +18,78 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { detectCrisis } from "./crisis.ts";
-import { buildSystemPrompt } from "./prompt.ts";
+import {
+  buildSystemPrompt,
+  type CrisisPlanSummary,
+  type MoodSummary,
+} from "./prompt.ts";
 import { makeProvider, type LlmMessage } from "./providers.ts";
+
+interface MoodLogRow {
+  mood: string | null;
+  energy: number | null;
+  created_at: string | null;
+}
+
+/**
+ * Resume los check-ins de mood de los últimos 14 días:
+ * - Cantidad total
+ * - Mood más frecuente
+ * - Último registro + cuánto tiempo atrás
+ *
+ * Devuelve null si no hay logs con mood registrado.
+ */
+function summarizeMood(logs: MoodLogRow[]): MoodSummary | null {
+  if (logs.length === 0) return null;
+
+  const counts: Record<string, number> = {};
+  for (const l of logs) {
+    if (!l.mood) continue;
+    counts[l.mood] = (counts[l.mood] ?? 0) + 1;
+  }
+
+  let dominantMood: string | null = null;
+  let bestCount = 0;
+  for (const [mood, count] of Object.entries(counts)) {
+    if (count > bestCount) {
+      dominantMood = mood;
+      bestCount = count;
+    }
+  }
+
+  // Último registro (ya vienen ordenados desc en la query, pero robustecemos)
+  const withDate = logs.filter((l) => l.created_at && l.mood);
+  withDate.sort((a, b) => {
+    const at = new Date(a.created_at!).getTime();
+    const bt = new Date(b.created_at!).getTime();
+    return bt - at;
+  });
+  const latest = withDate[0];
+
+  let lastEntry: MoodSummary["lastEntry"];
+  if (latest?.created_at && latest.mood) {
+    const hoursAgo = Math.max(
+      0,
+      Math.floor(
+        (Date.now() - new Date(latest.created_at).getTime()) / (1000 * 60 * 60)
+      )
+    );
+    lastEntry = {
+      mood: latest.mood,
+      energy: latest.energy,
+      hoursAgo,
+    };
+  }
+
+  const total = logs.filter((l) => l.mood).length;
+  if (total === 0) return null;
+
+  return {
+    checkinsLast14Days: total,
+    dominantMood,
+    lastEntry,
+  };
+}
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -135,7 +205,20 @@ Deno.serve(async (req: Request) => {
     }
 
     // 7. User context for system prompt
-    const [profileRes, diagnosesRes] = await Promise.all([
+    // Fetch en paralelo: profile, diagnoses, mood logs (14d), sensory prefs,
+    // crisis plan. Cualquier fallo puntual no aborta el chat — degradamos
+    // a contexto parcial.
+    const fourteenDaysAgo = new Date(
+      Date.now() - 14 * 24 * 60 * 60 * 1000
+    ).toISOString();
+
+    const [
+      profileRes,
+      diagnosesRes,
+      moodLogsRes,
+      sensoryRes,
+      crisisPlanRes,
+    ] = await Promise.all([
       supabase
         .from("profiles")
         .select("display_name")
@@ -145,15 +228,52 @@ Deno.serve(async (req: Request) => {
         .from("user_diagnoses")
         .select("diagnosis")
         .eq("user_id", user.id),
+      supabase
+        .from("mood_logs")
+        .select("mood, energy, created_at")
+        .gte("created_at", fourteenDaysAgo)
+        .order("created_at", { ascending: false })
+        .limit(60),
+      supabase
+        .from("sensory_preferences")
+        .select("calming_inputs")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("crisis_plans")
+        .select("anchor_phrase, what_helps")
+        .eq("user_id", user.id)
+        .maybeSingle(),
     ]);
 
     const diagnoses: string[] =
       (diagnosesRes.data ?? []).map((d: any) => d.diagnosis).filter(Boolean);
 
+    const moodSummary = summarizeMood(
+      (moodLogsRes.data ?? []) as MoodLogRow[]
+    );
+
+    const calmingRaw = sensoryRes.data?.calming_inputs;
+    const calmingInputs: string[] = Array.isArray(calmingRaw)
+      ? calmingRaw.filter((s: unknown): s is string => typeof s === "string")
+      : [];
+
+    const cp = crisisPlanRes.data;
+    const crisisPlan: CrisisPlanSummary | null =
+      cp && (cp.anchor_phrase || cp.what_helps)
+        ? {
+            anchorPhrase: cp.anchor_phrase ?? null,
+            whatHelps: cp.what_helps ?? null,
+          }
+        : null;
+
     const systemPrompt = buildSystemPrompt({
       displayName: profileRes.data?.display_name ?? null,
       diagnoses,
       crisisDetected: userCrisis.isCrisis,
+      moodSummary,
+      calmingInputs,
+      crisisPlan,
     });
 
     // 8. Fetch recent history (last 20 messages, in order)

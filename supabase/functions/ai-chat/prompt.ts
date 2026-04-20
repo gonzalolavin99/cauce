@@ -1,10 +1,34 @@
 // Gemelo server-side de src/features/ai-advisor/prompts/system.ts.
 // Mantener sincronizado con el builder del cliente.
 
+export interface MoodSummary {
+  /** Cuántos check-ins hizo en los últimos 14 días */
+  checkinsLast14Days: number;
+  /** Mood más frecuente en los últimos 14 días */
+  dominantMood: string | null;
+  /** Último check-in registrado, si existe */
+  lastEntry?: {
+    mood: string;
+    energy: number | null;
+    hoursAgo: number;
+  };
+}
+
+export interface CrisisPlanSummary {
+  anchorPhrase: string | null;
+  whatHelps: string | null;
+}
+
 export interface PromptContext {
   displayName?: string | null;
   diagnoses?: string[];
   crisisDetected?: boolean;
+  /** Resumen de mood últimos 14d (computado server-side) */
+  moodSummary?: MoodSummary | null;
+  /** Inputs que a la persona le calman */
+  calmingInputs?: string[];
+  /** Resumen del plan de crisis del usuario, si lo tiene */
+  crisisPlan?: CrisisPlanSummary | null;
 }
 
 const BASE_SYSTEM = `Eres "Cauce", un acompañante breve y cálido dentro de una app de bienestar para personas en Chile. NO eres terapeuta, psicólogo ni psiquiatra, y así lo dejas claro si te preguntan qué eres.
@@ -50,24 +74,106 @@ const DIAGNOSIS_TONE: Record<string, string> = {
   toc: "Con TOC: no des tranquilidad compulsiva. No respondas a búsquedas de reaseguro repetidas.",
 };
 
+const MOOD_LABELS: Record<string, string> = {
+  bien: "bien",
+  neutral: "neutral",
+  bajo: "bajo/a",
+  ansioso: "ansioso/a",
+  sobrecargado: "sobrecargado/a",
+  agitado: "agitado/a",
+};
+
+/** Formatea "hace X h / X días" para el último check-in. */
+function humanAgo(hoursAgo: number): string {
+  if (hoursAgo < 1) return "hace menos de 1h";
+  if (hoursAgo < 24) return `hace ${hoursAgo}h`;
+  const days = Math.floor(hoursAgo / 24);
+  if (days === 1) return "hace 1 día";
+  return `hace ${days} días`;
+}
+
+function truncate(s: string, max: number): string {
+  const t = s.trim();
+  if (t.length <= max) return t;
+  return t.slice(0, max - 1).trimEnd() + "…";
+}
+
 export function buildSystemPrompt(ctx: PromptContext): string {
   const parts: string[] = [BASE_SYSTEM];
 
+  // ---- Bloque de contexto sobre la persona ----
+  const ctxLines: string[] = [];
+
   if (ctx.displayName) {
-    parts.push(`El usuario prefiere que lo llames "${ctx.displayName}".`);
+    ctxLines.push(`Nombre: ${ctx.displayName}`);
   }
 
   if (ctx.diagnoses && ctx.diagnoses.length > 0) {
+    ctxLines.push(`Se identifica con: ${ctx.diagnoses.join(", ")}`);
     const tonalHints: string[] = [];
     for (const d of ctx.diagnoses) {
       const hint = DIAGNOSIS_TONE[d];
-      if (hint) tonalHints.push(`- ${hint}`);
+      if (hint) tonalHints.push(`  - ${hint}`);
     }
     if (tonalHints.length > 0) {
-      parts.push(
-        `El usuario se identifica con: ${ctx.diagnoses.join(", ")}. Adapta tu tono:\n${tonalHints.join("\n")}`
+      ctxLines.push(`Cómo calibrar tu tono:\n${tonalHints.join("\n")}`);
+    }
+  }
+
+  if (ctx.moodSummary && ctx.moodSummary.checkinsLast14Days > 0) {
+    const m = ctx.moodSummary;
+    const dominantLabel = m.dominantMood
+      ? MOOD_LABELS[m.dominantMood] ?? m.dominantMood
+      : null;
+    const bits: string[] = [];
+    if (dominantLabel) {
+      bits.push(
+        `Últimos 14 días: ${m.checkinsLast14Days} check-ins, predominantemente ${dominantLabel}`
+      );
+    } else {
+      bits.push(`Últimos 14 días: ${m.checkinsLast14Days} check-ins`);
+    }
+    if (m.lastEntry) {
+      const lastLabel =
+        MOOD_LABELS[m.lastEntry.mood] ?? m.lastEntry.mood;
+      const energyPart =
+        m.lastEntry.energy != null ? ` (energía ${m.lastEntry.energy}/5)` : "";
+      bits.push(
+        `Último check-in: ${humanAgo(m.lastEntry.hoursAgo)}, ${lastLabel}${energyPart}`
       );
     }
+    ctxLines.push(`Estado reciente:\n  - ${bits.join("\n  - ")}`);
+  }
+
+  if (ctx.calmingInputs && ctx.calmingInputs.length > 0) {
+    const list = ctx.calmingInputs
+      .map((s) => truncate(s, 40))
+      .slice(0, 6)
+      .join(", ");
+    ctxLines.push(`Le ayuda a calmarse: ${list}`);
+  }
+
+  if (ctx.crisisPlan) {
+    const anchor = ctx.crisisPlan.anchorPhrase?.trim();
+    const helps = ctx.crisisPlan.whatHelps?.trim();
+    const cp: string[] = [];
+    if (anchor) cp.push(`Frase ancla: "${truncate(anchor, 140)}"`);
+    if (helps) cp.push(`Lo que le ayuda: ${truncate(helps, 200)}`);
+    if (cp.length > 0) {
+      ctxLines.push(
+        `Plan de crisis (úsalo solo si el mensaje sugiere activación alta; puedes recordarle su frase ancla con delicadeza):\n  - ${cp.join(
+          "\n  - "
+        )}`
+      );
+    }
+  }
+
+  if (ctxLines.length > 0) {
+    parts.push(
+      `---- Contexto sobre esta persona (úsalo para calibrar tus respuestas; no lo cites textualmente) ----\n\n${ctxLines.join(
+        "\n\n"
+      )}\n\n---- Fin del contexto ----`
+    );
   }
 
   if (ctx.crisisDetected) {

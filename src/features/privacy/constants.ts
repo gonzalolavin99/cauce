@@ -5,7 +5,7 @@ import type { ConsentType } from "@/src/types/database.types";
  * Incrementar cuando haya cambios sustantivos → fuerza re-consentimiento.
  * Formato: YYYY.MM-vN
  */
-export const PRIVACY_POLICY_VERSION = "2026.04-v1";
+export const PRIVACY_POLICY_VERSION = "2026.04-v2";
 
 /** Consentimientos requeridos para usar la app */
 export const REQUIRED_CONSENTS: ConsentType[] = [
@@ -32,7 +32,7 @@ export const CONSENT_DESCRIPTIONS: Record<ConsentType, string> = {
   sensitive_health_data:
     "Guardamos diagnósticos que tú indicas, tus registros de estado y tus sesiones de regulación. Son datos sensibles. Solo tú los ves.",
   ai_advisor:
-    "Permite que conversaciones con el asistente se procesen por un proveedor de IA. No se comparten con terceros con fines comerciales. Puedes activarlo o desactivarlo cuando quieras.",
+    "Permite que tus conversaciones con el asistente se procesen por un proveedor de IA (OpenAI). Para personalizar las respuestas enviamos también, como contexto de la conversación, tu nombre si lo pusiste, los diagnósticos que indicaste, un resumen de tus check-ins de mood de los últimos 14 días, tus preferencias sensoriales calmantes y, si lo tienes, tu frase ancla y lo que te ayuda del plan de crisis. No se comparte con terceros con fines comerciales. Puedes activarlo o desactivarlo cuando quieras.",
   anonymous_analytics:
     "Nos ayuda a ver qué ejercicios funcionan sin identificarte. Puedes desactivarlo cuando quieras.",
 };
