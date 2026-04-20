@@ -1,5 +1,16 @@
 import { signOut, useAuth } from "@/src/features/auth/hooks/useAuth";
 import {
+  resolvePrefs,
+  useNotificationPreferences,
+  useUpsertNotificationPreferences,
+} from "@/src/features/notifications/hooks/useNotificationPreferences";
+import {
+  cancelAllCauce,
+  ensureAndroidChannel,
+  ensureNotificationPermission,
+  hasNotificationPermission,
+} from "@/src/features/notifications/service";
+import {
   CALMING_INPUTS,
   TRIGGERING_INPUTS,
 } from "@/src/features/onboarding/data/options";
@@ -15,6 +26,7 @@ import {
   useUpdatePreferences,
   useUpdateProfile,
 } from "@/src/features/profile/hooks/useUpdateProfile";
+import { cn } from "@/src/shared/lib/cn";
 import { Button } from "@/src/shared/ui/Button";
 import { ChipSelector } from "@/src/shared/ui/ChipSelector";
 import { Input } from "@/src/shared/ui/Input";
@@ -44,6 +56,21 @@ const MOBILITY_OPTIONS: { value: Mobility; label: string; hint?: string }[] = [
   { value: "still", label: "Quieto/a" },
 ];
 
+const CHECKIN_HOUR_PRESETS: { value: number; label: string }[] = [
+  { value: 8, label: "8:00" },
+  { value: 12, label: "12:00" },
+  { value: 18, label: "18:00" },
+  { value: 20, label: "20:00" },
+  { value: 22, label: "22:00" },
+];
+
+const INACTIVITY_DAY_PRESETS: { value: number; label: string }[] = [
+  { value: 2, label: "2 días" },
+  { value: 3, label: "3 días" },
+  { value: 5, label: "5 días" },
+  { value: 7, label: "1 semana" },
+];
+
 export default function ProfileScreen() {
   const router = useRouter();
   const { user } = useAuth();
@@ -55,6 +82,21 @@ export default function ProfileScreen() {
   const updateDiagnoses = useUpdateDiagnoses();
   const updatePreferences = useUpdatePreferences();
   const deleteAccount = useDeleteAccount();
+
+  const { data: rawNotifPrefs } = useNotificationPreferences();
+  const upsertNotifPrefs = useUpsertNotificationPreferences();
+  const notifPrefs = resolvePrefs(rawNotifPrefs);
+  const [notifPermissionGranted, setNotifPermissionGranted] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    hasNotificationPermission().then((v) => {
+      if (alive) setNotifPermissionGranted(v);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // Estados locales espejados a la BD
   const [displayName, setDisplayName] = useState("");
@@ -132,10 +174,91 @@ export default function ProfileScreen() {
     updatePreferences.mutate({ prefers_haptics: value });
   }
 
+  async function handleToggleDailyCheckin(value: boolean) {
+    if (value) {
+      const granted = await ensureNotificationPermission();
+      setNotifPermissionGranted(granted);
+      if (!granted) {
+        Alert.alert(
+          "Permiso requerido",
+          "Para enviarte recordatorios necesitamos permiso de notificaciones. Puedes activarlo desde los ajustes del teléfono."
+        );
+        return;
+      }
+      await ensureAndroidChannel();
+    }
+    upsertNotifPrefs.mutate(
+      { daily_checkin_enabled: value },
+      {
+        onError: (err: Error) => Alert.alert("Error", err.message),
+      }
+    );
+  }
+
+  function handleChangeCheckinHour(hour: number) {
+    upsertNotifPrefs.mutate(
+      { daily_checkin_hour: hour, daily_checkin_minute: 0 },
+      { onError: (err: Error) => Alert.alert("Error", err.message) }
+    );
+  }
+
+  async function handleToggleExerciseReminder(value: boolean) {
+    if (value) {
+      const granted = await ensureNotificationPermission();
+      setNotifPermissionGranted(granted);
+      if (!granted) {
+        Alert.alert(
+          "Permiso requerido",
+          "Para enviarte recordatorios necesitamos permiso de notificaciones."
+        );
+        return;
+      }
+      await ensureAndroidChannel();
+    }
+    upsertNotifPrefs.mutate(
+      { exercise_reminder_enabled: value },
+      { onError: (err: Error) => Alert.alert("Error", err.message) }
+    );
+  }
+
+  function handleChangeInactivityDays(days: number) {
+    upsertNotifPrefs.mutate(
+      { exercise_reminder_days: days },
+      { onError: (err: Error) => Alert.alert("Error", err.message) }
+    );
+  }
+
+  async function handleTogglePostCrisis(value: boolean) {
+    if (value) {
+      const granted = await ensureNotificationPermission();
+      setNotifPermissionGranted(granted);
+      if (!granted) {
+        Alert.alert(
+          "Permiso requerido",
+          "Para enviarte recordatorios necesitamos permiso de notificaciones."
+        );
+        return;
+      }
+      await ensureAndroidChannel();
+    }
+    upsertNotifPrefs.mutate(
+      { post_crisis_checkin_enabled: value },
+      { onError: (err: Error) => Alert.alert("Error", err.message) }
+    );
+  }
+
   function handleSignOut() {
     Alert.alert("¿Cerrar sesión?", "Tendrás que volver a ingresar.", [
       { text: "Cancelar", style: "cancel" },
-      { text: "Cerrar sesión", onPress: () => signOut() },
+      {
+        text: "Cerrar sesión",
+        onPress: async () => {
+          // Limpiamos notificaciones locales para no disparar en un teléfono
+          // prestado o tras logout.
+          await cancelAllCauce().catch(() => {});
+          signOut();
+        },
+      },
     ]);
   }
 
@@ -277,6 +400,110 @@ export default function ProfileScreen() {
               Guardar preferencias
             </Button>
           </View>
+        </Section>
+
+        {/* Sección: Recordatorios (notificaciones locales) */}
+        <Section title="Recordatorios">
+          <Text className="text-sm text-ink/60 mb-4 leading-5">
+            Notificaciones suaves, sólo en tu teléfono. Todo apagado por
+            defecto — eliges qué te hace sentido.
+          </Text>
+
+          {notifPermissionGranted === false && (
+            <View className="mb-4 p-3 rounded-xl bg-sand border border-river-100">
+              <Text className="text-xs text-ink/70">
+                No tenemos permiso de notificaciones. Al activar un
+                recordatorio te lo pediremos; si lo bloqueaste, tendrás
+                que habilitarlo desde los ajustes del teléfono.
+              </Text>
+            </View>
+          )}
+
+          <ToggleRow
+            label="Check-in diario"
+            description="Te recordamos anotar cómo estás una vez al día."
+            value={notifPrefs.daily_checkin_enabled}
+            onChange={handleToggleDailyCheckin}
+          />
+
+          {notifPrefs.daily_checkin_enabled && (
+            <View className="mt-3 mb-4">
+              <Text className="text-xs text-ink/60 mb-2">Hora</Text>
+              <View className="flex-row flex-wrap gap-2">
+                {CHECKIN_HOUR_PRESETS.map((opt) => {
+                  const active = notifPrefs.daily_checkin_hour === opt.value;
+                  return (
+                    <Pressable
+                      key={opt.value}
+                      onPress={() => handleChangeCheckinHour(opt.value)}
+                      className={cn(
+                        "px-4 py-2 rounded-2xl border",
+                        active
+                          ? "bg-river-500 border-river-500"
+                          : "bg-white border-river-100"
+                      )}
+                    >
+                      <Text
+                        className={cn(
+                          "text-sm font-medium",
+                          active ? "text-white" : "text-ink"
+                        )}
+                      >
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          <ToggleRow
+            label="Empujón por inactividad"
+            description="Si pasan varios días sin un ejercicio de regulación."
+            value={notifPrefs.exercise_reminder_enabled}
+            onChange={handleToggleExerciseReminder}
+          />
+
+          {notifPrefs.exercise_reminder_enabled && (
+            <View className="mt-3 mb-4">
+              <Text className="text-xs text-ink/60 mb-2">Después de</Text>
+              <View className="flex-row flex-wrap gap-2">
+                {INACTIVITY_DAY_PRESETS.map((opt) => {
+                  const active =
+                    notifPrefs.exercise_reminder_days === opt.value;
+                  return (
+                    <Pressable
+                      key={opt.value}
+                      onPress={() => handleChangeInactivityDays(opt.value)}
+                      className={cn(
+                        "px-4 py-2 rounded-2xl border",
+                        active
+                          ? "bg-river-500 border-river-500"
+                          : "bg-white border-river-100"
+                      )}
+                    >
+                      <Text
+                        className={cn(
+                          "text-sm font-medium",
+                          active ? "text-white" : "text-ink"
+                        )}
+                      >
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          <ToggleRow
+            label="Check-in post-crisis"
+            description="Un saludo 24h después de un momento difícil en el chat."
+            value={notifPrefs.post_crisis_checkin_enabled}
+            onChange={handleTogglePostCrisis}
+          />
         </Section>
 
         {/* Sección: Toggles */}

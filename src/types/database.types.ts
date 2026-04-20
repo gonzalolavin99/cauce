@@ -204,6 +204,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          user_id: string
+          daily_checkin_enabled: boolean
+          daily_checkin_hour: number
+          daily_checkin_minute: number
+          exercise_reminder_enabled: boolean
+          exercise_reminder_days: number
+          post_crisis_checkin_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          daily_checkin_enabled?: boolean
+          daily_checkin_hour?: number
+          daily_checkin_minute?: number
+          exercise_reminder_enabled?: boolean
+          exercise_reminder_days?: number
+          post_crisis_checkin_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          daily_checkin_enabled?: boolean
+          daily_checkin_hour?: number
+          daily_checkin_minute?: number
+          exercise_reminder_enabled?: boolean
+          exercise_reminder_days?: number
+          post_crisis_checkin_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mood_logs: {
         Row: {
           created_at: string | null
@@ -593,3 +626,5 @@ export type RegulationSession =
   Database["public"]["Tables"]["regulation_sessions"]["Row"];
 export type MoodLog = Database["public"]["Tables"]["mood_logs"]["Row"];
 export type CrisisPlan = Database["public"]["Tables"]["crisis_plans"]["Row"];
+export type NotificationPreferences =
+  Database["public"]["Tables"]["notification_preferences"]["Row"];

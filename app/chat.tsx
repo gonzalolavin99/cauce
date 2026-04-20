@@ -10,6 +10,15 @@ import {
   useCrisisPlan,
 } from "@/src/features/crisis/hooks/useCrisisPlan";
 import {
+  resolvePrefs,
+  useNotificationPreferences,
+} from "@/src/features/notifications/hooks/useNotificationPreferences";
+import {
+  ensureAndroidChannel,
+  hasNotificationPermission,
+  schedulePostCrisisCheckin,
+} from "@/src/features/notifications/service";
+import {
   CONSENT_DESCRIPTIONS,
   CONSENT_LABELS,
 } from "@/src/features/privacy/constants";
@@ -175,6 +184,8 @@ function ChatBody({ onClose }: { onClose: () => void }) {
   const sendMessage = useSendMessage();
   const { data: crisisPlan } = useCrisisPlan();
   const hasCrisisPlan = isCrisisPlanUseful(crisisPlan);
+  const { data: rawNotifPrefs } = useNotificationPreferences();
+  const notifPrefs = resolvePrefs(rawNotifPrefs);
 
   const [input, setInput] = useState("");
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(
@@ -220,6 +231,20 @@ function ChatBody({ onClose }: { onClose: () => void }) {
             Haptics.notificationAsync(
               Haptics.NotificationFeedbackType.Warning
             ).catch(() => {});
+
+            // Check-in 24h después, sólo si la persona lo activó en ajustes.
+            if (notifPrefs.post_crisis_checkin_enabled) {
+              void (async () => {
+                try {
+                  const granted = await hasNotificationPermission();
+                  if (!granted) return;
+                  await ensureAndroidChannel();
+                  await schedulePostCrisisCheckin();
+                } catch {
+                  // silent — no bloqueamos el chat por esto
+                }
+              })();
+            }
           }
         },
         onError: (err: Error) => {
