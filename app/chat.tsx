@@ -171,6 +171,9 @@ function ChatBody({ onClose }: { onClose: () => void }) {
   const sendMessage = useSendMessage();
 
   const [input, setInput] = useState("");
+  const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(
+    null
+  );
   const scrollRef = useRef<ScrollView | null>(null);
 
   // Sincronizar conversación activa al montar
@@ -178,13 +181,14 @@ function ChatBody({ onClose }: { onClose: () => void }) {
     if (activeConvId && !conversationId) setConversationId(activeConvId);
   }, [activeConvId, conversationId]);
 
-  // Auto-scroll al final cuando llegan mensajes nuevos
+  // Auto-scroll al final cuando llegan mensajes nuevos o cuando el usuario
+  // acaba de enviar un mensaje (optimista).
   useEffect(() => {
     const t = setTimeout(() => {
       scrollRef.current?.scrollToEnd({ animated: true });
     }, 100);
     return () => clearTimeout(t);
-  }, [messages?.length, sendMessage.isPending]);
+  }, [messages?.length, sendMessage.isPending, pendingUserMessage]);
 
   const inputCrisis = useMemo(() => detectCrisis(input), [input]);
 
@@ -194,12 +198,18 @@ function ChatBody({ onClose }: { onClose: () => void }) {
 
     Haptics.selectionAsync().catch(() => {});
 
+    // Respuesta optimista: limpiamos el input y mostramos el mensaje del
+    // usuario inmediatamente. Cuando el servidor responde, invalidamos la
+    // query de mensajes y el bubble optimista se reemplaza por el persistido.
+    setInput("");
+    setPendingUserMessage(trimmed);
+
     sendMessage.mutate(
       { conversationId, message: trimmed },
       {
         onSuccess: (data) => {
           setConversationId(data.conversation_id);
-          setInput("");
+          setPendingUserMessage(null);
           if (data.flagged_for_crisis) {
             Haptics.notificationAsync(
               Haptics.NotificationFeedbackType.Warning
@@ -207,6 +217,10 @@ function ChatBody({ onClose }: { onClose: () => void }) {
           }
         },
         onError: (err: Error) => {
+          // Si falló, devolvemos el texto al input para que pueda reintentar.
+          setPendingUserMessage(null);
+          setInput(trimmed);
+
           if (err.message === "ai_consent_missing") {
             Alert.alert(
               "Consentimiento requerido",
@@ -285,6 +299,15 @@ function ChatBody({ onClose }: { onClose: () => void }) {
           {!isLoading && !hasMessages && <EmptyState />}
 
           {messages?.map((msg) => <MessageBubble key={msg.id} msg={msg} />)}
+
+          {/* Bubble optimista del usuario mientras el servidor procesa */}
+          {pendingUserMessage && (
+            <View className="my-1 max-w-[85%] px-4 py-3 rounded-2xl self-end bg-river-500">
+              <Text className="text-sm leading-5 text-white">
+                {pendingUserMessage}
+              </Text>
+            </View>
+          )}
 
           {sendMessage.isPending && (
             <View className="my-2 px-4 py-3 rounded-2xl self-start bg-river-50 border border-river-100">
