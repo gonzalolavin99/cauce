@@ -1,0 +1,11 @@
+# Configuración de Supabase CLI para el proyecto Cauce.
+# Docs: https://supabase.com/docs/guides/local-development/cli/config
+
+project_id = "cauce"
+
+[functions.ai-chat]
+# Desactivamos la verificación automática del JWT en el gateway.
+# Nuestro código ya valida el usuario con supabase.auth.getUser() dentro de
+# la función, así que la comprobación del gateway es redundante y además
+# falla con las nuevas signing keys ES256 de Supabase.
+verify_jwt = false

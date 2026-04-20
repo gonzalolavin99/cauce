@@ -29,23 +29,27 @@ export function useSendMessage() {
       if (error) {
         // El FunctionsHttpError de supabase-js envuelve el body JSON
         // en .context.response si está disponible.
-        const detail =
-          (error as unknown as { context?: { response?: Response } })?.context
-            ?.response;
-        if (detail) {
+        const response = (
+          error as unknown as { context?: { response?: Response } }
+        )?.context?.response;
+
+        if (response) {
           try {
-            const parsed = await detail.json();
-            if (parsed?.error === "ai_consent_missing") {
+            const parsed = await response.json();
+            const serverError: string | undefined = parsed?.error;
+            const detail: string | undefined = parsed?.detail;
+
+            if (serverError === "ai_consent_missing") {
               throw new Error("ai_consent_missing");
             }
-            throw new Error(parsed?.error ?? error.message);
+
+            // Mensaje amable combinando código + detalle para debug
+            const composed = [serverError, detail]
+              .filter(Boolean)
+              .join(": ");
+            throw new Error(composed || error.message);
           } catch (jsonErr) {
-            if (
-              jsonErr instanceof Error &&
-              jsonErr.message === "ai_consent_missing"
-            ) {
-              throw jsonErr;
-            }
+            if (jsonErr instanceof Error) throw jsonErr;
           }
         }
         throw error;

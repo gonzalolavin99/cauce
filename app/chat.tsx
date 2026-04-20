@@ -234,9 +234,9 @@ function ChatBody({ onClose }: { onClose: () => void }) {
   return (
     <Screen>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
       >
         {/* Header */}
         <View className="px-6 pt-4 pb-3 border-b border-river-100 flex-row justify-between items-center">
@@ -272,7 +272,8 @@ function ChatBody({ onClose }: { onClose: () => void }) {
         {/* Messages */}
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 24, flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
           {isLoading && (
