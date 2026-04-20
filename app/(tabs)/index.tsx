@@ -58,6 +58,11 @@ export default function HomeScreen() {
     router.push("/mood");
   }
 
+  function handleMoodHistoryPress() {
+    Haptics.selectionAsync().catch(() => {});
+    router.push("/mood-history");
+  }
+
   function handleChatPress() {
     Haptics.selectionAsync().catch(() => {});
     router.push("/chat");
@@ -117,6 +122,17 @@ export default function HomeScreen() {
           </View>
           <Text className="text-river-700 text-xl">›</Text>
         </Pressable>
+
+        {lastMoodInfo && (
+          <Pressable
+            onPress={handleMoodHistoryPress}
+            className="mt-2 py-2 active:opacity-60"
+          >
+            <Text className="text-sm text-river-700 font-medium text-center">
+              Ver mi historial →
+            </Text>
+          </Pressable>
+        )}
 
         {/* Hablar con Cauce (IA) */}
         <Pressable

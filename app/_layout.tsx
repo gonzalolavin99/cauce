@@ -49,6 +49,10 @@ export default function RootLayout() {
             options={{ presentation: "modal" }}
           />
           <Stack.Screen
+            name="mood-history"
+            options={{ presentation: "modal" }}
+          />
+          <Stack.Screen
             name="privacy"
             options={{ presentation: "modal" }}
           />

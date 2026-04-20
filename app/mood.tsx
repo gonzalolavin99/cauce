@@ -177,9 +177,22 @@ export default function MoodScreen() {
 
           {/* Historial */}
           <View className="mt-12">
-            <Text className="text-lg font-semibold text-ink mb-4">
-              Últimas entradas
-            </Text>
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-lg font-semibold text-ink">
+                Últimas entradas
+              </Text>
+              <Pressable
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {});
+                  router.push("/mood-history");
+                }}
+                className="py-1 px-2 active:opacity-60"
+              >
+                <Text className="text-sm text-river-700 font-medium">
+                  Ver todo →
+                </Text>
+              </Pressable>
+            </View>
 
             {isLoading && (
               <Text className="text-ink/60">Cargando...</Text>
