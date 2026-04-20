@@ -20,6 +20,7 @@ import { ChipSelector } from "@/src/shared/ui/ChipSelector";
 import { Input } from "@/src/shared/ui/Input";
 import { Screen } from "@/src/shared/ui/Screen";
 import type { Diagnosis, Mobility } from "@/src/types/database.types";
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -44,6 +45,7 @@ const MOBILITY_OPTIONS: { value: Mobility; label: string; hint?: string }[] = [
 ];
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { user } = useAuth();
   const { data: profile } = useProfile();
   const { data: prefs } = useSensoryPreferences();
@@ -305,12 +307,35 @@ export default function ProfileScreen() {
           </Pressable>
         </Section>
 
-        {/* Sección: Privacidad + eliminar cuenta */}
-        <Section title="Privacidad">
+        {/* Sección: Privacidad */}
+        <Section title="Privacidad y datos">
           <Text className="text-sm text-ink/60 mb-4 leading-5">
-            Tus datos son tuyos. Puedes eliminar tu cuenta y toda tu
-            información cuando quieras.
+            Tus datos son tuyos. Puedes ver, exportar o eliminar todo
+            cuando quieras.
           </Text>
+
+          <Pressable
+            onPress={() => router.push("/my-data")}
+            className="mb-3 p-4 rounded-2xl bg-river-50 border border-river-100 active:bg-river-100"
+          >
+            <Text className="text-river-900 font-medium">Mis datos</Text>
+            <Text className="text-xs text-ink/60 mt-0.5">
+              Ver, exportar, revocar consentimientos
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.push("/privacy")}
+            className="mb-4 p-4 rounded-2xl bg-river-50 border border-river-100 active:bg-river-100"
+          >
+            <Text className="text-river-900 font-medium">
+              Política de privacidad
+            </Text>
+            <Text className="text-xs text-ink/60 mt-0.5">
+              Cómo tratamos tus datos
+            </Text>
+          </Pressable>
+
           <Pressable
             onPress={handleDeleteAccount}
             disabled={deleteAccount.isPending}

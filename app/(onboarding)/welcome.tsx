@@ -18,7 +18,7 @@ export default function WelcomeScreen() {
           Toma 1-2 minutos. Puedes cambiar todo después.
         </Text>
 
-        <Button onPress={() => router.push("/(onboarding)/diagnosis")}>
+        <Button onPress={() => router.push("/(onboarding)/consent")}>
           Empezar
         </Button>
       </View>

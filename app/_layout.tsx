@@ -48,6 +48,22 @@ export default function RootLayout() {
             name="mood"
             options={{ presentation: "modal" }}
           />
+          <Stack.Screen
+            name="privacy"
+            options={{ presentation: "modal" }}
+          />
+          <Stack.Screen
+            name="my-data"
+            options={{ presentation: "modal" }}
+          />
+          <Stack.Screen
+            name="chat"
+            options={{ presentation: "modal" }}
+          />
+          <Stack.Screen
+            name="consent-update"
+            options={{ gestureEnabled: false }}
+          />
           <Stack.Screen name="+not-found" />
         </Stack>
       </ThemeProvider>

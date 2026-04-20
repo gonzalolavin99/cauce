@@ -43,6 +43,36 @@ export type Database = {
           },
         ]
       }
+      consents: {
+        Row: {
+          id: string
+          user_id: string
+          consent_type: string
+          policy_version: string
+          action: string
+          created_at: string
+          device_info: Json | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          consent_type: string
+          policy_version: string
+          action: string
+          created_at?: string
+          device_info?: Json | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          consent_type?: string
+          policy_version?: string
+          action?: string
+          created_at?: string
+          device_info?: Json | null
+        }
+        Relationships: []
+      }
       ai_messages: {
         Row: {
           content: string
@@ -501,6 +531,14 @@ export type ExerciseStep =
       phases: { label: string; seconds: number }[];
       repeat: number;
     };
+
+export type ConsentType =
+  | "data_processing"
+  | "sensitive_health_data"
+  | "ai_advisor"
+  | "anonymous_analytics";
+export type ConsentAction = "grant" | "revoke";
+export type Consent = Database["public"]["Tables"]["consents"]["Row"];
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type SensoryPreferences =

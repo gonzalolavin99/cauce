@@ -58,6 +58,11 @@ export default function HomeScreen() {
     router.push("/mood");
   }
 
+  function handleChatPress() {
+    Haptics.selectionAsync().catch(() => {});
+    router.push("/chat");
+  }
+
   const lastMoodInfo = useMemo(() => {
     if (!lastMood?.mood) return null;
     const moodKey = lastMood.mood as MoodValue;
@@ -108,6 +113,23 @@ export default function HomeScreen() {
               {lastMoodInfo
                 ? `Último: ${lastMoodInfo.label.toLowerCase()}`
                 : "Anota tu estado en segundos"}
+            </Text>
+          </View>
+          <Text className="text-river-700 text-xl">›</Text>
+        </Pressable>
+
+        {/* Hablar con Cauce (IA) */}
+        <Pressable
+          onPress={handleChatPress}
+          className="mt-3 p-4 rounded-2xl bg-white border border-river-100 active:bg-river-50 flex-row items-center"
+        >
+          <Text className="text-3xl mr-3">🫧</Text>
+          <View className="flex-1">
+            <Text className="text-base font-semibold text-ink">
+              Hablar con Cauce
+            </Text>
+            <Text className="text-sm text-ink/60 mt-0.5">
+              Conversa con el asistente · IA, no es terapia
             </Text>
           </View>
           <Text className="text-river-700 text-xl">›</Text>
