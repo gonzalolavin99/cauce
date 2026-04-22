@@ -403,6 +403,23 @@ export default function ProfileScreen() {
           </View>
         </Section>
 
+        {/* Sección: Tus patrones (insights) */}
+        <Section title="Tus patrones">
+          <Text className="text-sm text-ink/60 mb-4 leading-5">
+            Un resumen honesto de lo que tú mismo/a has registrado en los
+            últimos 30 días. Sin rachas ni puntajes.
+          </Text>
+          <Pressable
+            onPress={() => router.push("/insights")}
+            className="p-4 rounded-2xl bg-river-50 border border-river-100 active:bg-river-100"
+          >
+            <Text className="text-river-900 font-medium">Ver mis patrones</Text>
+            <Text className="text-xs text-ink/60 mt-0.5">
+              Check-ins, mood predominante, ejercicios usados
+            </Text>
+          </Pressable>
+        </Section>
+
         {/* Sección: Recordatorios (notificaciones locales) */}
         <Section title="Recordatorios">
           <Text className="text-sm text-ink/60 mb-4 leading-5">

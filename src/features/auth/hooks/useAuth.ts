@@ -1,3 +1,4 @@
+import { clearCachedPlan } from "@/src/features/crisis/lib/offlineCache";
 import { supabase } from "@/src/shared/lib/supabase";
 import type { Session, User } from "@supabase/supabase-js";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -50,8 +51,17 @@ export async function signInWithEmail(email: string, password: string) {
 }
 
 export async function signOut(): Promise<void> {
+  // Capturamos el user actual antes del signOut para poder limpiar
+  // el cache offline keyeado por userId.
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user?.id;
+
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
+
+  if (userId) {
+    await clearCachedPlan(userId);
+  }
 }
 
 export type { Session, User };

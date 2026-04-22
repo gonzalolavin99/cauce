@@ -30,21 +30,35 @@ type Mode = "view" | "edit";
 export default function CrisisPlanScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ mode?: string }>();
-  const { data: plan, isLoading } = useCrisisPlan();
+  const { data, isLoading } = useCrisisPlan();
 
+  const plan = data?.plan ?? null;
+  const fromCache = data?.fromCache ?? false;
+  const lastSyncedAt = data?.lastSyncedAt ?? null;
   const hasPlan = isCrisisPlanUseful(plan);
+
+  // Si estamos sirviendo desde cache (sin conexión), bloqueamos la edición:
+  // no queremos sobrescribir lo que haya en el server con cambios ciegos.
   const initialMode: Mode =
-    params.mode === "edit" || !hasPlan ? "edit" : "view";
+    params.mode === "edit" && !fromCache
+      ? "edit"
+      : !hasPlan && !fromCache
+        ? "edit"
+        : "view";
 
   const [mode, setMode] = useState<Mode>(initialMode);
 
   // Si entra con plan cargado y no se forzó edit, arranca en view.
   // (Este useEffect cubre el caso en que el fetch todavía no había resuelto.)
   useEffect(() => {
-    if (params.mode === "edit") return;
     if (isLoading) return;
+    if (fromCache) {
+      setMode("view");
+      return;
+    }
+    if (params.mode === "edit") return;
     setMode(hasPlan ? "view" : "edit");
-  }, [params.mode, isLoading, hasPlan]);
+  }, [params.mode, isLoading, hasPlan, fromCache]);
 
   if (isLoading) {
     return (
@@ -59,7 +73,7 @@ export default function CrisisPlanScreen() {
   if (mode === "edit") {
     return (
       <EditPlan
-        plan={plan ?? null}
+        plan={plan}
         onSaved={() => setMode("view")}
         onCancel={() => {
           if (hasPlan) {
@@ -75,10 +89,29 @@ export default function CrisisPlanScreen() {
   return (
     <ViewPlan
       plan={plan!}
+      fromCache={fromCache}
+      lastSyncedAt={lastSyncedAt}
       onEdit={() => setMode("edit")}
       onClose={() => router.back()}
     />
   );
+}
+
+/**
+ * "hace 3h", "hace 2 días", etc. Para el banner de offline.
+ */
+function humanSince(iso: string | null): string {
+  if (!iso) return "hace tiempo";
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return "hace tiempo";
+  const minutes = Math.floor(ms / (1000 * 60));
+  if (minutes < 1) return "recién";
+  if (minutes < 60) return `hace ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `hace ${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "hace 1 día";
+  return `hace ${days} días`;
 }
 
 // ====================================================================
@@ -87,10 +120,14 @@ export default function CrisisPlanScreen() {
 
 function ViewPlan({
   plan,
+  fromCache,
+  lastSyncedAt,
   onEdit,
   onClose,
 }: {
   plan: CrisisPlan;
+  fromCache: boolean;
+  lastSyncedAt: string | null;
   onEdit: () => void;
   onClose: () => void;
 }) {
@@ -114,6 +151,13 @@ function ViewPlan({
   function handleGoToSupport() {
     Haptics.selectionAsync().catch(() => {});
     router.replace("/(tabs)/support");
+  }
+
+  function handleOfflineEdit() {
+    Alert.alert(
+      "Sin conexión",
+      "No podemos editar tu plan ahora para no pisar una versión más nueva que pueda haber en tu cuenta. Intenta de nuevo cuando vuelva la señal."
+    );
   }
 
   function handleDelete() {
@@ -155,6 +199,17 @@ function ViewPlan({
             <Text className="text-river-900 font-medium">Cerrar</Text>
           </Pressable>
         </View>
+
+        {/* Banner sutil si estamos sirviendo desde cache local */}
+        {fromCache && (
+          <View className="mb-5 p-3 rounded-2xl bg-sand border border-river-100">
+            <Text className="text-xs text-ink/70 leading-5">
+              Sin conexión. Te estamos mostrando tu plan guardado (
+              {humanSince(lastSyncedAt)}). Cuando vuelva la señal, se
+              sincroniza solo.
+            </Text>
+          </View>
+        )}
 
         {/* Frase ancla — grande, prominente */}
         {plan.anchor_phrase && (
@@ -213,20 +268,26 @@ function ViewPlan({
         />
         <Section title="Notas" value={plan.notes} />
 
-        {/* Footer: editar / borrar */}
+        {/* Footer: editar / borrar. Deshabilitados en modo offline. */}
         <View className="mt-4 gap-3">
-          <Button variant="secondary" onPress={onEdit}>
-            Editar mi plan
-          </Button>
-          <Pressable
-            onPress={handleDelete}
-            disabled={deletePlan.isPending}
-            className="p-3 rounded-2xl bg-alert/10 border border-alert/30 active:bg-alert/20"
+          <Button
+            variant="secondary"
+            onPress={fromCache ? handleOfflineEdit : onEdit}
+            disabled={fromCache}
           >
-            <Text className="text-alert text-sm font-medium text-center">
-              {deletePlan.isPending ? "Borrando..." : "Borrar plan"}
-            </Text>
-          </Pressable>
+            {fromCache ? "Editar (requiere conexión)" : "Editar mi plan"}
+          </Button>
+          {!fromCache && (
+            <Pressable
+              onPress={handleDelete}
+              disabled={deletePlan.isPending}
+              className="p-3 rounded-2xl bg-alert/10 border border-alert/30 active:bg-alert/20"
+            >
+              <Text className="text-alert text-sm font-medium text-center">
+                {deletePlan.isPending ? "Borrando..." : "Borrar plan"}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         <Text className="text-xs text-ink/40 text-center mt-6 leading-4">

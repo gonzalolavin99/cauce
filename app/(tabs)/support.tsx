@@ -11,7 +11,8 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 
 export default function SupportScreen() {
   const router = useRouter();
-  const { data: plan } = useCrisisPlan();
+  const { data } = useCrisisPlan();
+  const plan = data?.plan ?? null;
   const hasPlan = isCrisisPlanUseful(plan);
 
   const emergency = CRISIS_RESOURCES.filter((r) => r.primary);
