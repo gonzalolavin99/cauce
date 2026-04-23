@@ -7,6 +7,7 @@ import {
 } from "@/src/features/crisis/hooks/useCrisisPlan";
 import { Button } from "@/src/shared/ui/Button";
 import { Input } from "@/src/shared/ui/Input";
+import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
 import type { CrisisPlan } from "@/src/types/database.types";
 import * as Haptics from "expo-haptics";
@@ -186,20 +187,8 @@ function ViewPlan({
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }}>
-        {/* Header */}
-        <View className="flex-row justify-between items-center mb-6">
-          <Text className="text-2xl font-bold text-ink flex-1 pr-4">
-            Mi plan
-          </Text>
-          <Pressable
-            onPress={onClose}
-            className="px-3 py-2 rounded-xl bg-river-50"
-          >
-            <Text className="text-river-900 font-medium">Cerrar</Text>
-          </Pressable>
-        </View>
-
+      <PageHeader title="Mi plan" onBack={onClose} />
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}>
         {/* Banner sutil si estamos sirviendo desde cache local */}
         {fromCache && (
           <View className="mb-5 p-3 rounded-2xl bg-sand border border-river-100">
@@ -373,35 +362,20 @@ function EditPlan({
 
   return (
     <Screen>
+      <PageHeader
+        title="Mi plan de crisis"
+        subtitle="Escribe en calma lo que quieras poder recordar cuando estés mal. Todos los campos son opcionales — llena sólo lo que te haga sentido."
+        onBack={onCancel}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
         keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
       >
         <ScrollView
-          contentContainerStyle={{ padding: 24, paddingBottom: 48 }}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header */}
-          <View className="flex-row justify-between items-center mb-3">
-            <Text className="text-2xl font-bold text-ink flex-1 pr-4">
-              Mi plan de crisis
-            </Text>
-            <Pressable
-              onPress={onCancel}
-              className="px-3 py-2 rounded-xl bg-river-50"
-            >
-              <Text className="text-river-900 font-medium">
-                {plan ? "Cancelar" : "Cerrar"}
-              </Text>
-            </Pressable>
-          </View>
-
-          <Text className="text-sm text-ink/70 leading-5 mb-8">
-            Escribe en calma lo que quieras poder recordar cuando estés
-            mal. Todos los campos son opcionales — llena sólo lo que te
-            haga sentido.
-          </Text>
 
           {/* Frase ancla */}
           <Field
@@ -462,17 +436,20 @@ function EditPlan({
               onChangeText={(v) => set("trusted_contact_name", v)}
               placeholder="Nombre"
               autoCapitalize="words"
+              maxLength={80}
             />
             <Input
               value={form.trusted_contact_phone ?? ""}
               onChangeText={(v) => set("trusted_contact_phone", v)}
               placeholder="Teléfono (ej: +56 9 1234 5678)"
               keyboardType="phone-pad"
+              maxLength={24}
             />
             <Input
               value={form.trusted_contact_relation ?? ""}
               onChangeText={(v) => set("trusted_contact_relation", v)}
               placeholder="Relación (ej: mamá, amiga, terapeuta)"
+              maxLength={40}
             />
           </Field>
 

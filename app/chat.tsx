@@ -28,7 +28,9 @@ import {
 } from "@/src/features/privacy/hooks/useConsents";
 import { cn } from "@/src/shared/lib/cn";
 import { Button } from "@/src/shared/ui/Button";
+import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -99,24 +101,12 @@ function AiConsentGate({
   const router = useRouter();
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }}>
-        <View className="flex-row justify-between items-center mb-6">
-          <Text className="text-3xl font-bold text-ink flex-1 pr-4">
-            Asistente con IA
-          </Text>
-          <Pressable
-            onPress={onClose}
-            className="px-3 py-2 rounded-xl bg-river-50"
-          >
-            <Text className="text-river-900 font-medium">Cerrar</Text>
-          </Pressable>
-        </View>
-
-        <Text className="text-ink/70 mb-6 leading-6">
-          Cauce puede incluir un acompañante conversacional. Para usarlo,
-          necesitamos un consentimiento específico y adicional, porque tus
-          mensajes salen del servidor de Cauce hacia un proveedor de IA.
-        </Text>
+      <PageHeader
+        title="Asistente con IA"
+        subtitle="Cauce puede incluir un acompañante conversacional. Para usarlo, necesitamos un consentimiento específico y adicional, porque tus mensajes salen del servidor de Cauce hacia un proveedor de IA."
+        onBack={onClose}
+      />
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}>
 
         <View className="mb-5 p-4 rounded-2xl bg-sand border border-river-100">
           <Text className="font-semibold text-ink mb-2">
@@ -253,16 +243,49 @@ function ChatBody({ onClose }: { onClose: () => void }) {
           setPendingUserMessage(null);
           setInput(trimmed);
 
-          if (err.message === "ai_consent_missing") {
+          // SEC-3 M4: mapear códigos del server a mensajes en español.
+          // Nunca mostramos el .message crudo porque puede filtrar tokens
+          // técnicos ("rate_limited", "invalid_conversation_id") que no son
+          // útiles para el usuario.
+          const code = err.message ?? "";
+          if (code === "ai_consent_missing") {
             Alert.alert(
               "Consentimiento requerido",
               "Necesitamos tu consentimiento para usar el asistente con IA."
             );
             return;
           }
+          if (code === "rate_limited") {
+            Alert.alert(
+              "Muchos mensajes seguidos",
+              "Has mandado varios mensajes en poco tiempo. Descansa unos minutos y vuelve a intentar."
+            );
+            return;
+          }
+          if (code === "message_too_long") {
+            Alert.alert(
+              "Mensaje muy largo",
+              "Intenta con un mensaje más corto."
+            );
+            return;
+          }
+          if (code === "invalid_conversation_id") {
+            Alert.alert(
+              "Conversación inválida",
+              "No pudimos identificar esta conversación. Intenta abrir una nueva."
+            );
+            return;
+          }
+          if (code.startsWith("llm_timeout_")) {
+            Alert.alert(
+              "El asistente está lento",
+              "No obtuvimos respuesta a tiempo. Intenta de nuevo en un momento."
+            );
+            return;
+          }
           Alert.alert(
             "No se pudo enviar",
-            err.message || "Intenta de nuevo en un momento."
+            "Intenta de nuevo en un momento."
           );
         },
       }
@@ -284,20 +307,28 @@ function ChatBody({ onClose }: { onClose: () => void }) {
         style={{ flex: 1 }}
         keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
       >
-        {/* Header */}
-        <View className="px-6 pt-4 pb-3 border-b border-river-100 flex-row justify-between items-center">
-          <View className="flex-1 pr-3">
-            <Text className="text-lg font-bold text-ink">Asistente Cauce</Text>
-            <Text className="text-xs text-ink/50 mt-0.5">
-              IA · no es terapia
-            </Text>
-          </View>
+        {/* Header compacto sticky: el chat necesita el header pegado y con
+            borde visible, por eso no usamos el PageHeader generoso acá. */}
+        <View className="px-5 pt-3 pb-3 border-b border-river-100 flex-row items-center bg-white/60">
           <Pressable
             onPress={onClose}
-            className="px-3 py-2 rounded-xl bg-river-50"
+            hitSlop={12}
+            className="w-10 h-10 rounded-full items-center justify-center bg-river-50 active:bg-river-100 mr-3"
+            accessibilityLabel="Volver"
+            accessibilityRole="button"
           >
-            <Text className="text-river-900 font-medium">Cerrar</Text>
+            <Ionicons name="chevron-back" size={20} color="#2E5F60" />
           </Pressable>
+          <View className="w-10 h-10 rounded-2xl bg-river-500 items-center justify-center mr-3">
+            <Text className="text-white text-xl">🫧</Text>
+          </View>
+          <View className="flex-1">
+            <Text className="text-base font-bold text-ink">Asistente Cauce</Text>
+            <View className="flex-row items-center mt-0.5">
+              <View className="w-1.5 h-1.5 rounded-full bg-river-500 mr-1.5" />
+              <Text className="text-xs text-ink/60">IA · no es terapia</Text>
+            </View>
+          </View>
         </View>
 
         {/* Disclaimer permanente */}

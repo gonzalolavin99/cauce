@@ -5,7 +5,7 @@ import type { ConsentType } from "@/src/types/database.types";
  * Incrementar cuando haya cambios sustantivos → fuerza re-consentimiento.
  * Formato: YYYY.MM-vN
  */
-export const PRIVACY_POLICY_VERSION = "2026.04-v2";
+export const PRIVACY_POLICY_VERSION = "2026.04-v3";
 
 /** Consentimientos requeridos para usar la app */
 export const REQUIRED_CONSENTS: ConsentType[] = [

@@ -4,9 +4,11 @@ import {
   CATEGORY_ORDER,
 } from "@/src/features/exercises/data/labels";
 import { useExercises } from "@/src/features/exercises/hooks/useExercises";
+import { Card } from "@/src/shared/ui/Card";
 import { ChipSelector } from "@/src/shared/ui/ChipSelector";
 import { Screen } from "@/src/shared/ui/Screen";
 import type { ExerciseCategory } from "@/src/types/database.types";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
@@ -57,6 +59,8 @@ export default function ExploreScreen() {
     router.push({ pathname: "/regulate", params: { exerciseId } });
   }
 
+  const hasActiveFilter = category !== "all" || duration !== "any";
+
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }}>
@@ -65,9 +69,12 @@ export default function ExploreScreen() {
           Navega todos los ejercicios disponibles.
         </Text>
 
-        <Text className="text-xs uppercase text-ink/60 font-semibold mb-3 tracking-wider">
-          Categoría
-        </Text>
+        <View className="flex-row items-center mb-3 gap-2">
+          <Ionicons name="layers-outline" size={14} color="#2F6D6E" />
+          <Text className="text-xs uppercase text-ink/60 font-semibold tracking-wider">
+            Categoría
+          </Text>
+        </View>
         <ChipSelector<CategoryFilter>
           options={categoryOptions}
           selected={[category]}
@@ -78,9 +85,12 @@ export default function ExploreScreen() {
         />
 
         <View className="mt-6">
-          <Text className="text-xs uppercase text-ink/60 font-semibold mb-3 tracking-wider">
-            Duración
-          </Text>
+          <View className="flex-row items-center mb-3 gap-2">
+            <Ionicons name="time-outline" size={14} color="#2F6D6E" />
+            <Text className="text-xs uppercase text-ink/60 font-semibold tracking-wider">
+              Duración
+            </Text>
+          </View>
           <ChipSelector<DurationFilter>
             options={DURATION_OPTIONS}
             selected={[duration]}
@@ -92,12 +102,35 @@ export default function ExploreScreen() {
         </View>
 
         <View className="mt-8">
-          {isLoading && <ActivityIndicator />}
+          {!isLoading && filtered.length > 0 && (
+            <Text className="text-xs text-ink/50 mb-3">
+              {filtered.length}{" "}
+              {filtered.length === 1 ? "ejercicio" : "ejercicios"}
+            </Text>
+          )}
+
+          {isLoading && (
+            <View className="py-10 items-center">
+              <ActivityIndicator />
+            </View>
+          )}
 
           {!isLoading && filtered.length === 0 && (
-            <Text className="text-ink/60">
-              No hay ejercicios con estos filtros.
-            </Text>
+            <Card variant="muted">
+              <View className="items-center py-4">
+                <View className="h-12 w-12 rounded-2xl bg-river-100 items-center justify-center mb-3">
+                  <Ionicons name="search-outline" size={22} color="#2F6D6E" />
+                </View>
+                <Text className="text-base font-semibold text-ink mb-1">
+                  Sin resultados
+                </Text>
+                <Text className="text-sm text-ink/60 text-center leading-5">
+                  {hasActiveFilter
+                    ? "No hay ejercicios con estos filtros. Prueba ampliando la búsqueda."
+                    : "Aún no hay ejercicios disponibles."}
+                </Text>
+              </View>
+            </Card>
           )}
 
           {filtered.map((exercise) => (

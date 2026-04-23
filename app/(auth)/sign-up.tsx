@@ -6,6 +6,23 @@ import { Link } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
 
+// SEC-3 M5: validación client-side de contraseña.
+// Supabase Auth ya exige min 6 chars por default pero no calidad. Los datos
+// detrás del login son sensibles (Ley 19.628), así que pedimos algo más
+// resistente a diccionario:
+//   - 10+ caracteres
+//   - al menos una letra y al menos un número
+// No forzamos símbolos ni mayúsculas — friccion sin subir mucho la barra
+// contra ataques online (rate-limited por Supabase).
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validatePassword(pw: string): string | null {
+  if (pw.length < 10) return "La contraseña debe tener al menos 10 caracteres";
+  if (!/[A-Za-z]/.test(pw)) return "Agrega al menos una letra";
+  if (!/[0-9]/.test(pw)) return "Agrega al menos un número";
+  return null;
+}
+
 export default function SignUpScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -13,14 +30,20 @@ export default function SignUpScreen() {
   const [error, setError] = useState<string | null>(null);
 
   async function handleSignUp() {
-    if (password.length < 8) {
-      setError("La contraseña debe tener al menos 8 caracteres");
+    const cleanEmail = email.trim();
+    if (!EMAIL_RE.test(cleanEmail)) {
+      setError("Revisa el correo");
+      return;
+    }
+    const pwError = validatePassword(password);
+    if (pwError) {
+      setError(pwError);
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      await signUpWithEmail(email.trim(), password);
+      await signUpWithEmail(cleanEmail, password);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error desconocido");
     } finally {
@@ -58,7 +81,7 @@ export default function SignUpScreen() {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            placeholder="Al menos 8 caracteres"
+            placeholder="Mín. 10 caracteres, con letras y números"
             error={error ?? undefined}
           />
 

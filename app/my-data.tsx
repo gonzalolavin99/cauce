@@ -11,6 +11,7 @@ import {
 } from "@/src/features/privacy/hooks/useConsents";
 import { useMyDataExport } from "@/src/features/privacy/hooks/useMyDataExport";
 import { Button } from "@/src/shared/ui/Button";
+import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
 import type { ConsentType } from "@/src/types/database.types";
 import { useRouter } from "expo-router";
@@ -77,23 +78,11 @@ export default function MyDataScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }}>
-        <View className="flex-row justify-between items-center mb-6">
-          <Text className="text-3xl font-bold text-ink flex-1 pr-4">
-            Mis datos
-          </Text>
-          <Pressable
-            onPress={() => router.back()}
-            className="px-3 py-2 rounded-xl bg-river-50"
-          >
-            <Text className="text-river-900 font-medium">Cerrar</Text>
-          </Pressable>
-        </View>
-
-        <Text className="text-ink/70 mb-8 leading-6">
-          Ejerce tus derechos ARCOPP (Acceso, Rectificación, Cancelación,
-          Oposición, Portabilidad) sobre tus datos personales.
-        </Text>
+      <PageHeader
+        title="Mis datos"
+        subtitle="Ejerce tus derechos ARCOPP (Acceso, Rectificación, Cancelación, Oposición, Portabilidad)."
+      />
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}>
 
         {/* Exportar */}
         <Section title="Portabilidad">

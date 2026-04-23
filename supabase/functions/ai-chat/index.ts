@@ -94,6 +94,17 @@ function summarizeMood(logs: MoodLogRow[]): MoodSummary | null {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+// Rate limit: 20 mensajes por 15 min por usuario.
+// Ventana deslizante simple: la cuenta se resetea cuando han pasado
+// RATE_LIMIT_WINDOW_MS desde `window_start`.
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const RATE_LIMIT_MAX = 20;
+
+// UUID v4 (y compatibles): 8-4-4-4-12 hex. Validamos formato antes
+// de tocar Postgres para no generar errores 500 por inputs basura.
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -143,6 +154,72 @@ Deno.serve(async (req: Request) => {
     }
     if (message.length > 4000) {
       return jsonResponse({ error: "message_too_long" }, 400);
+    }
+    if (
+      conversationIdIn !== null &&
+      (typeof conversationIdIn !== "string" || !UUID_RE.test(conversationIdIn))
+    ) {
+      return jsonResponse({ error: "invalid_conversation_id" }, 400);
+    }
+
+    // 2.5 Rate limit — sliding window por usuario.
+    // Si el usuario no tiene fila todavía, la creamos en 1. Si tiene
+    // fila dentro de la ventana y no superó el tope, incrementamos.
+    // Si la ventana ya expiró, reseteamos.
+    {
+      const { data: rl } = await supabase
+        .from("ai_chat_rate_limits")
+        .select("window_start, request_count")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const now = new Date();
+      const windowStart = rl ? new Date(rl.window_start) : null;
+      const inWindow =
+        !!windowStart &&
+        now.getTime() - windowStart.getTime() < RATE_LIMIT_WINDOW_MS;
+
+      if (inWindow && rl && rl.request_count >= RATE_LIMIT_MAX) {
+        const retryAfterSec = Math.max(
+          1,
+          Math.ceil(
+            (RATE_LIMIT_WINDOW_MS -
+              (now.getTime() - windowStart!.getTime())) /
+              1000
+          )
+        );
+        return new Response(
+          JSON.stringify({ error: "rate_limited", retry_after: retryAfterSec }),
+          {
+            status: 429,
+            headers: {
+              ...CORS_HEADERS,
+              "Content-Type": "application/json",
+              "Retry-After": String(retryAfterSec),
+            },
+          }
+        );
+      }
+
+      const { error: rlUpsertErr } = await supabase
+        .from("ai_chat_rate_limits")
+        .upsert(
+          {
+            user_id: user.id,
+            window_start: inWindow
+              ? (rl!.window_start as unknown as string)
+              : now.toISOString(),
+            request_count: inWindow ? rl!.request_count + 1 : 1,
+            updated_at: now.toISOString(),
+          },
+          { onConflict: "user_id" }
+        );
+      if (rlUpsertErr) {
+        // No bloqueamos: si falla el upsert, log y seguimos. Prefiero
+        // servir a un usuario legítimo que caerle a uno que quizás
+        // no está abusando por un error de DB.
+        console.error("rate limit upsert error", rlUpsertErr);
+      }
     }
 
     // 3. Check ai_advisor consent (latest event must be 'grant')
@@ -329,10 +406,10 @@ Deno.serve(async (req: Request) => {
       flagged_for_crisis: flagged,
     });
   } catch (err) {
+    // Log completo server-side para debug, respuesta genérica al cliente
+    // para evitar information disclosure (stack traces, nombres de
+    // columnas de Postgres, URLs internas, etc).
     console.error("server error", err);
-    return jsonResponse(
-      { error: "server_error", detail: String(err) },
-      500
-    );
+    return jsonResponse({ error: "server_error" }, 500);
   }
 });

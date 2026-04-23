@@ -17,6 +17,12 @@ interface ChipSelectorProps<T extends string> {
   addPlaceholder?: string;
 }
 
+// SEC-3 M3: límites defensivos para chips custom.
+// Previene inputs abusivos (strings enormes o cientos de chips) que
+// terminarían en la DB y en el prompt del LLM.
+const MAX_CUSTOM_CHIP_LENGTH = 40;
+const MAX_TOTAL_CHIPS = 20;
+
 export function ChipSelector<T extends string>({
   options,
   selected,
@@ -36,13 +42,18 @@ export function ChipSelector<T extends string>({
     if (selected.includes(value)) {
       onChange(selected.filter((v) => v !== value));
     } else {
+      if (multi && selected.length >= MAX_TOTAL_CHIPS) return;
       onChange(multi ? [...selected, value] : [value]);
     }
   }
 
   function addCustom() {
-    const trimmed = customInput.trim();
+    const trimmed = customInput.trim().slice(0, MAX_CUSTOM_CHIP_LENGTH);
     if (!trimmed) return;
+    if (selected.length >= MAX_TOTAL_CHIPS) {
+      setCustomInput("");
+      return;
+    }
     if ((selected as string[]).includes(trimmed)) {
       setCustomInput("");
       return;
@@ -115,6 +126,7 @@ export function ChipSelector<T extends string>({
             placeholderTextColor="rgba(0,0,0,0.4)"
             returnKeyType="done"
             blurOnSubmit={false}
+            maxLength={MAX_CUSTOM_CHIP_LENGTH}
             className="flex-1 px-4 py-3 rounded-2xl border border-river-100 bg-white text-ink"
           />
           <Pressable

@@ -2,6 +2,35 @@
 // Para cambiar de OpenAI a Anthropic/Gemini/Mistral/etc., implementar
 // la interfaz LlmProvider y actualizar la factory en index.ts.
 
+// Timeout defensivo para llamadas a proveedores LLM. Si el servicio
+// se cuelga, cancelamos antes de agotar el hard timeout del edge
+// runtime (60s típico en Supabase) — así no desperdiciamos invocación
+// completa esperando a un proveedor caído.
+const LLM_TIMEOUT_MS = 30_000;
+
+/**
+ * Envuelve fetch con AbortController para timeout duro.
+ * Lanza un Error con mensaje distintivo si se agota el tiempo.
+ */
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (err) {
+    if ((err as { name?: string })?.name === "AbortError") {
+      throw new Error(`llm_timeout_${timeoutMs}ms`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export interface LlmMessage {
   role: "system" | "user" | "assistant";
   content: string;
@@ -31,19 +60,23 @@ export class OpenAIProvider implements LlmProvider {
   ) {}
 
   async complete(messages: LlmMessage[]): Promise<LlmResponse> {
-    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`,
+    const resp = await fetchWithTimeout(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages,
+          max_tokens: this.maxTokens,
+          temperature: this.temperature,
+        }),
       },
-      body: JSON.stringify({
-        model: this.model,
-        messages,
-        max_tokens: this.maxTokens,
-        temperature: this.temperature,
-      }),
-    });
+      LLM_TIMEOUT_MS
+    );
 
     if (!resp.ok) {
       const errText = await resp.text();
@@ -80,20 +113,24 @@ export class AnthropicProvider implements LlmProvider {
     const systemMsg = messages.find((m) => m.role === "system");
     const convo = messages.filter((m) => m.role !== "system");
 
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": this.apiKey,
-        "anthropic-version": "2023-06-01",
+    const resp = await fetchWithTimeout(
+      "https://api.anthropic.com/v1/messages",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": this.apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: this.model,
+          max_tokens: this.maxTokens,
+          system: systemMsg?.content ?? "",
+          messages: convo.map((m) => ({ role: m.role, content: m.content })),
+        }),
       },
-      body: JSON.stringify({
-        model: this.model,
-        max_tokens: this.maxTokens,
-        system: systemMsg?.content ?? "",
-        messages: convo.map((m) => ({ role: m.role, content: m.content })),
-      }),
-    });
+      LLM_TIMEOUT_MS
+    );
 
     if (!resp.ok) {
       const errText = await resp.text();

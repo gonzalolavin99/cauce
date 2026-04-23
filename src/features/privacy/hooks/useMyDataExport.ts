@@ -14,6 +14,10 @@ export interface MyDataDump {
   consents: unknown;
   ai_conversations: unknown;
   ai_messages: unknown;
+  // SEC-5: Ley 19.628 Art. 12 (derecho de acceso) exige TODOS los datos
+  // personales del titular. Incluidos aquí tras audit.
+  crisis_plan: unknown;
+  notification_preferences: unknown;
 }
 
 /**
@@ -36,6 +40,8 @@ export function useMyDataExport() {
         consents,
         conversations,
         messages,
+        crisisPlan,
+        notifPrefs,
       ] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
         supabase
@@ -67,6 +73,16 @@ export function useMyDataExport() {
         supabase
           .from("ai_messages")
           .select("id,conversation_id,role,content,flagged_for_crisis,created_at"),
+        supabase
+          .from("crisis_plans")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("notification_preferences")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle(),
       ]);
 
       return {
@@ -81,6 +97,8 @@ export function useMyDataExport() {
         consents: consents.data ?? [],
         ai_conversations: conversations.data ?? [],
         ai_messages: messages.data ?? [],
+        crisis_plan: crisisPlan.data,
+        notification_preferences: notifPrefs.data,
       };
     },
   });

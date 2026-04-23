@@ -1,4 +1,10 @@
 import { cn } from "@/src/shared/lib/cn";
+import { useReducedMotion } from "@/src/shared/lib/useReducedMotion";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { ActivityIndicator, Pressable, Text } from "react-native";
 
 interface ButtonProps {
@@ -9,6 +15,8 @@ interface ButtonProps {
   disabled?: boolean;
 }
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 export function Button({
   onPress,
   children,
@@ -17,10 +25,30 @@ export function Button({
   disabled,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
+  const reduceMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    if (reduceMotion) return;
+    scale.value = withTiming(0.97, { duration: 90 });
+  };
+
+  const handlePressOut = () => {
+    if (reduceMotion) return;
+    scale.value = withTiming(1, { duration: 160 });
+  };
+
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       disabled={isDisabled}
+      style={animatedStyle}
       className={cn(
         "rounded-2xl px-6 py-4 items-center justify-center min-h-[56px]",
         variant === "primary" && "bg-river-500 active:bg-river-700",
@@ -30,7 +58,7 @@ export function Button({
       )}
     >
       {loading ? (
-        <ActivityIndicator color="white" />
+        <ActivityIndicator color={variant === "primary" ? "white" : "#2E5F60"} />
       ) : (
         <Text
           className={cn(
@@ -43,6 +71,6 @@ export function Button({
           {children}
         </Text>
       )}
-    </Pressable>
+    </AnimatedPressable>
   );
 }

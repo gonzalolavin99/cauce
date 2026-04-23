@@ -17,6 +17,7 @@ import {
 } from "@/src/features/mood/engine/insights";
 import { useMoodLogs } from "@/src/features/mood/hooks/useMoodLogs";
 import { cn } from "@/src/shared/lib/cn";
+import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
 import type { MoodLog } from "@/src/types/database.types";
 import * as Haptics from "expo-haptics";
@@ -78,20 +79,11 @@ export default function MoodHistoryScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }}>
-        {/* Header */}
-        <View className="flex-row justify-between items-center mb-6">
-          <Text className="text-3xl font-bold text-ink flex-1 pr-4">
-            Mi historial
-          </Text>
-          <Pressable
-            onPress={() => router.back()}
-            className="px-3 py-2 rounded-xl bg-river-50"
-          >
-            <Text className="text-river-900 font-medium">Cerrar</Text>
-          </Pressable>
-        </View>
-
+      <PageHeader
+        title="Mi historial"
+        subtitle="Patrones sin puntajes ni rachas agresivas. Solo lo que anotaste."
+      />
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}>
         {/* Range selector */}
         <View className="flex-row gap-2 mb-6">
           <RangeChip

@@ -2,31 +2,18 @@ import {
   DATA_CONTROLLER,
   PRIVACY_POLICY_VERSION,
 } from "@/src/features/privacy/constants";
+import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
-import { useRouter } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 
 export default function PrivacyScreen() {
-  const router = useRouter();
-
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }}>
-        <View className="flex-row justify-between items-center mb-6">
-          <Text className="text-3xl font-bold text-ink flex-1 pr-4">
-            Política de privacidad
-          </Text>
-          <Pressable
-            onPress={() => router.back()}
-            className="px-3 py-2 rounded-xl bg-river-50"
-          >
-            <Text className="text-river-900 font-medium">Cerrar</Text>
-          </Pressable>
-        </View>
-
-        <Text className="text-xs text-ink/50 mb-8">
-          Versión {PRIVACY_POLICY_VERSION} · Chile
-        </Text>
+      <PageHeader
+        title="Política de privacidad"
+        subtitle={`Versión ${PRIVACY_POLICY_VERSION} · Chile`}
+      />
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}>
 
         <Section title="1. Responsable del tratamiento">
           <Paragraph>
@@ -48,6 +35,15 @@ export default function PrivacyScreen() {
           </Bullet>
           <Bullet>
             Preferencias sensoriales, movilidad, tiempo disponible habitual.
+          </Bullet>
+          <Bullet>
+            Plan de crisis personal: frase ancla, lo que te ayuda, un
+            contacto de confianza opcional, razones para sostenerte. Solo
+            tú lo ves.
+          </Bullet>
+          <Bullet>
+            Preferencias de notificaciones (horarios, frecuencia) si las
+            activas.
           </Bullet>
           <Bullet>
             Datos técnicos mínimos (plataforma, sistema operativo) para
@@ -117,9 +113,10 @@ export default function PrivacyScreen() {
           <Paragraph>
             Conservamos tus datos mientras mantengas tu cuenta activa. Al
             eliminar la cuenta borramos inmediatamente perfil, diagnósticos,
-            preferencias, sesiones, mood logs y conversaciones. Los eventos
-            de consentimiento se conservan solo para auditoría legal y luego
-            se eliminan en cascada.
+            preferencias sensoriales, sesiones de regulación, registros de
+            mood, plan de crisis, preferencias de notificaciones y
+            conversaciones con el asistente. Los eventos de consentimiento
+            también se eliminan en cascada al cerrar la cuenta.
           </Paragraph>
         </Section>
 
