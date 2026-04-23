@@ -61,6 +61,9 @@ export function PageHeader({
             onPress={rightAction.onPress}
             disabled={rightAction.disabled}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={rightAction.label}
+            accessibilityState={{ disabled: rightAction.disabled }}
             className={
               rightAction.disabled
                 ? "px-4 py-2 rounded-full bg-river-100 opacity-50"
@@ -74,7 +77,12 @@ export function PageHeader({
         )}
       </View>
 
-      <Text className="text-3xl font-bold text-ink leading-tight">{title}</Text>
+      <Text
+        accessibilityRole="header"
+        className="text-3xl font-bold text-ink leading-tight"
+      >
+        {title}
+      </Text>
       {subtitle && (
         <Text className="text-base text-ink/60 mt-2 leading-6">{subtitle}</Text>
       )}

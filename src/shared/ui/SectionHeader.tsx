@@ -33,8 +33,20 @@ export function SectionHeader({
       style={{ marginBottom: spacing }}
     >
       <View className="flex-row items-center gap-2">
-        {icon && <Ionicons name={icon} size={14} color={iconColor} />}
-        <Text className="text-xs uppercase text-ink/60 font-semibold tracking-wider">
+        {icon && (
+          <Ionicons
+            name={icon}
+            size={14}
+            color={iconColor}
+            // El icono es ornamental — la etiqueta ya describe la sección.
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          />
+        )}
+        <Text
+          accessibilityRole="header"
+          className="text-xs uppercase text-ink/60 font-semibold tracking-wider"
+        >
           {label}
         </Text>
       </View>

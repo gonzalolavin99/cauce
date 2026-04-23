@@ -49,6 +49,9 @@ export function Button({
       onPressOut={handlePressOut}
       disabled={isDisabled}
       style={animatedStyle}
+      accessibilityRole="button"
+      accessibilityLabel={children}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       className={cn(
         "rounded-2xl px-6 py-4 items-center justify-center min-h-[56px]",
         variant === "primary" && "bg-river-500 active:bg-river-700",
@@ -58,7 +61,11 @@ export function Button({
       )}
     >
       {loading ? (
-        <ActivityIndicator color={variant === "primary" ? "white" : "#2E5F60"} />
+        <ActivityIndicator
+          color={variant === "primary" ? "white" : "#2E5F60"}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        />
       ) : (
         <Text
           className={cn(

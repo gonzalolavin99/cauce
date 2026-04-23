@@ -36,6 +36,10 @@ export function Screen({
       {ambient && (
         <View
           pointerEvents="none"
+          // Puramente decorativo. Oculto del árbol de a11y para que TalkBack/
+          // VoiceOver no intente leer ni enfocar los halos.
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
           style={{
             position: "absolute",
             top: 0,

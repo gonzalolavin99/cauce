@@ -226,6 +226,17 @@ function ViewPlan({
         {phoneClean && (
           <Pressable
             onPress={handleCall}
+            accessibilityRole="button"
+            accessibilityLabel={
+              plan.trusted_contact_name
+                ? `Llamar a ${plan.trusted_contact_name}`
+                : "Llamar a mi contacto"
+            }
+            accessibilityHint={
+              plan.trusted_contact_relation
+                ? `Contacto: ${plan.trusted_contact_relation}. Abre el teléfono para marcar.`
+                : "Abre el teléfono para marcar."
+            }
             className="mb-3 p-4 rounded-2xl bg-alert active:bg-alert/80"
           >
             <Text className="text-white text-base font-semibold text-center">
@@ -243,6 +254,9 @@ function ViewPlan({
 
         <Pressable
           onPress={handleGoToSupport}
+          accessibilityRole="button"
+          accessibilityLabel="Ver números de emergencia"
+          accessibilityHint="Abre la pestaña de apoyo con SAMU, Salud Responde y Línea Libre"
           className="mb-8 p-4 rounded-2xl bg-sand border border-river-100 active:bg-river-50"
         >
           <Text className="text-river-900 text-base font-semibold text-center">
@@ -298,6 +312,13 @@ function ViewPlan({
             <Pressable
               onPress={handleDelete}
               disabled={deletePlan.isPending}
+              accessibilityRole="button"
+              accessibilityLabel="Borrar plan"
+              accessibilityHint="Acción destructiva e irreversible"
+              accessibilityState={{
+                disabled: deletePlan.isPending,
+                busy: deletePlan.isPending,
+              }}
               className="p-3 rounded-2xl bg-alert/10 border border-alert/30 active:bg-alert/20"
             >
               <Text className="text-alert text-sm font-medium text-center">
@@ -538,11 +559,32 @@ function Field({
   hint?: string;
   children: React.ReactNode;
 }) {
+  // Si el Field envuelve un único input, inyectamos el `label` visible como
+  // `accessibilityLabel` del input (equivalente a <label htmlFor> en web),
+  // respetando cualquier override explícito. Cuando hay múltiples inputs
+  // (ej: el bloque de contacto con nombre/teléfono/relación), cada hijo
+  // trae su propio accessibilityLabel.
+  const count = React.Children.count(children);
+  const enhanced =
+    count === 1
+      ? React.Children.map(children, (child) => {
+          if (React.isValidElement<Record<string, unknown>>(child)) {
+            return React.cloneElement(child, {
+              accessibilityLabel:
+                (child.props.accessibilityLabel as string | undefined) ?? label,
+              accessibilityHint:
+                (child.props.accessibilityHint as string | undefined) ?? hint,
+            });
+          }
+          return child;
+        })
+      : children;
+
   return (
     <View className="mb-6">
       <Text className="text-sm font-semibold text-ink mb-1">{label}</Text>
       {hint && <Text className="text-xs text-ink/60 leading-4 mb-3">{hint}</Text>}
-      {children}
+      {enhanced}
     </View>
   );
 }
@@ -551,10 +593,14 @@ function MultilineInput({
   value,
   onChangeText,
   placeholder,
+  accessibilityLabel,
+  accessibilityHint,
 }: {
   value: string;
   onChangeText: (v: string) => void;
   placeholder?: string;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }) {
   return (
     <TextInput
@@ -562,6 +608,8 @@ function MultilineInput({
       onChangeText={onChangeText}
       placeholder={placeholder}
       placeholderTextColor="#9ca3af"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
       multiline
       maxLength={2000}
       className="rounded-2xl px-4 py-3 bg-white border border-river-100 text-ink text-base"

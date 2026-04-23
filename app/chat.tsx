@@ -323,13 +323,26 @@ function ChatBody({ onClose }: { onClose: () => void }) {
           >
             <Ionicons name="chevron-back" size={20} color="#2E5F60" />
           </Pressable>
-          <View className="w-10 h-10 rounded-2xl bg-river-500 items-center justify-center mr-3">
+          <View
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            className="w-10 h-10 rounded-2xl bg-river-500 items-center justify-center mr-3"
+          >
             <Text className="text-white text-xl">🫧</Text>
           </View>
-          <View className="flex-1">
+          <View
+            accessibilityRole="header"
+            accessible
+            accessibilityLabel="Asistente Cauce. Asistente con IA, no es terapia."
+            className="flex-1"
+          >
             <Text className="text-base font-bold text-ink">Asistente Cauce</Text>
             <View className="flex-row items-center mt-0.5">
-              <View className="w-1.5 h-1.5 rounded-full bg-river-500 mr-1.5" />
+              <View
+                accessibilityElementsHidden
+                importantForAccessibility="no"
+                className="w-1.5 h-1.5 rounded-full bg-river-500 mr-1.5"
+              />
               <Text className="text-xs text-ink/60">IA · no es terapia</Text>
             </View>
           </View>
@@ -396,6 +409,9 @@ function ChatBody({ onClose }: { onClose: () => void }) {
             <View className="flex-row gap-2">
               <Pressable
                 onPress={handleGoToSupport}
+                accessibilityRole="button"
+                accessibilityLabel="Ir a Apoyo"
+                accessibilityHint="Abre la pestaña de apoyo con números de emergencia"
                 className="px-3 py-2 rounded-xl bg-alert"
               >
                 <Text className="text-white text-sm font-semibold">
@@ -408,6 +424,8 @@ function ChatBody({ onClose }: { onClose: () => void }) {
                     Haptics.selectionAsync().catch(() => {});
                     router.push("/crisis-plan");
                   }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ver mi plan de crisis"
                   className="px-3 py-2 rounded-xl bg-white border border-alert/40"
                 >
                   <Text className="text-alert text-sm font-semibold">
@@ -434,6 +452,12 @@ function ChatBody({ onClose }: { onClose: () => void }) {
           <Pressable
             onPress={handleSend}
             disabled={!input.trim() || sendMessage.isPending}
+            accessibilityRole="button"
+            accessibilityLabel="Enviar mensaje"
+            accessibilityState={{
+              disabled: !input.trim() || sendMessage.isPending,
+              busy: sendMessage.isPending,
+            }}
             className={cn(
               "px-4 py-3 rounded-2xl",
               !input.trim() || sendMessage.isPending

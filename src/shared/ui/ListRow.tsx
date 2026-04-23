@@ -90,12 +90,33 @@ export function ListRow({
   );
 
   if (onPress && !disabled) {
+    // El subtitle lo anunciamos como hint (segundo read-out en TalkBack/
+    // VoiceOver), y el destructivo lleva un accessibilityHint más explícito
+    // para que el usuario sepa la consecuencia antes de tocar.
+    const hint = isDestructive
+      ? subtitle
+        ? `${subtitle}. Acción destructiva.`
+        : "Acción destructiva."
+      : subtitle;
     return (
-      <Pressable onPress={onPress} className={containerClass}>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={title}
+        accessibilityHint={hint}
+        className={containerClass}
+      >
         {content}
       </Pressable>
     );
   }
 
-  return <View className={containerClass}>{content}</View>;
+  return (
+    <View
+      accessibilityState={disabled ? { disabled: true } : undefined}
+      className={containerClass}
+    >
+      {content}
+    </View>
+  );
 }

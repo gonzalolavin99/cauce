@@ -6,7 +6,24 @@ interface InputProps extends TextInputProps {
   error?: string;
 }
 
-export function Input({ label, error, className, ...props }: InputProps) {
+export function Input({
+  label,
+  error,
+  className,
+  accessibilityLabel,
+  ...props
+}: InputProps) {
+  // Si hay label visible y no se pasó un accessibilityLabel explícito, lo
+  // usamos como label del input para TalkBack/VoiceOver (equivalente a
+  // aria-labelledby en web). El placeholder ya sirve como hint adicional.
+  const a11yLabel =
+    accessibilityLabel ??
+    (label
+      ? error
+        ? `${label}. Error: ${error}`
+        : label
+      : undefined);
+
   return (
     <View className="mb-4">
       {label && (
@@ -14,6 +31,7 @@ export function Input({ label, error, className, ...props }: InputProps) {
       )}
       <TextInput
         placeholderTextColor="#9ca3af"
+        accessibilityLabel={a11yLabel}
         className={cn(
           "rounded-2xl px-4 py-4 bg-white border text-ink text-base",
           error ? "border-alert" : "border-river-100",

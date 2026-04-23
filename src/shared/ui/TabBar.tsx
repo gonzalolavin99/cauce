@@ -94,9 +94,10 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
               key={route.key}
               onPress={onPress}
               onLongPress={onLongPress}
-              accessibilityRole="button"
+              accessibilityRole="tab"
               accessibilityLabel={accessibilityLabel}
-              accessibilityState={isFocused ? { selected: true } : {}}
+              accessibilityHint={`Pestaña ${index + 1} de ${state.routes.length}`}
+              accessibilityState={{ selected: isFocused }}
               className="flex-1 items-center justify-center py-2"
               hitSlop={8}
             >
@@ -104,6 +105,8 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
                 name={iconName}
                 size={22}
                 color={isFocused ? "#2F6D6E" : "#9AAAAB"}
+                accessibilityElementsHidden
+                importantForAccessibility="no"
               />
               <Text
                 style={{
@@ -115,8 +118,11 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
               >
                 {label}
               </Text>
-              {/* Punto indicador bajo el icono activo — pequeño pero visible */}
+              {/* Punto indicador bajo el icono activo — decorativo, oculto a
+                  screen readers (el estado selected ya se anuncia). */}
               <View
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
                 style={{
                   marginTop: 3,
                   width: 4,
