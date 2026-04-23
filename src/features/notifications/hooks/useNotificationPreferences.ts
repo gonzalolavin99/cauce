@@ -1,17 +1,15 @@
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
+import {
+  DEFAULT_NOTIF_PREFS,
+  resolvePrefs,
+} from "@/src/features/notifications/lib/resolvePrefs";
 import { supabase } from "@/src/shared/lib/supabase";
 import type { NotificationPreferences } from "@/src/types/database.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-/** Valores por defecto si el usuario nunca guardó una fila. */
-export const DEFAULT_NOTIF_PREFS: Omit<NotificationPreferences, "user_id" | "updated_at"> = {
-  daily_checkin_enabled: false,
-  daily_checkin_hour: 20,
-  daily_checkin_minute: 0,
-  exercise_reminder_enabled: false,
-  exercise_reminder_days: 3,
-  post_crisis_checkin_enabled: false,
-};
+// Re-exports para no romper imports existentes. La lógica pura vive en
+// `@/src/features/notifications/lib/resolvePrefs` y es testeable sin deps.
+export { DEFAULT_NOTIF_PREFS, resolvePrefs };
 
 /**
  * Devuelve las preferencias de notificaciones. Si no hay fila todavía,
@@ -79,14 +77,3 @@ export function useUpsertNotificationPreferences() {
   });
 }
 
-/** Resuelve las prefs efectivas: fila del usuario o defaults. */
-export function resolvePrefs(
-  raw: NotificationPreferences | null | undefined
-): NotificationPreferences {
-  if (raw) return raw;
-  return {
-    user_id: "",
-    ...DEFAULT_NOTIF_PREFS,
-    updated_at: new Date().toISOString(),
-  };
-}

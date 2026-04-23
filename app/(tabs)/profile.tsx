@@ -27,7 +27,6 @@ import {
   useUpdatePreferences,
   useUpdateProfile,
 } from "@/src/features/profile/hooks/useUpdateProfile";
-import { cn } from "@/src/shared/lib/cn";
 import { Avatar, initialsFrom } from "@/src/shared/ui/Avatar";
 import { Button } from "@/src/shared/ui/Button";
 import { Card } from "@/src/shared/ui/Card";
@@ -40,14 +39,7 @@ import type { Diagnosis, Mobility } from "@/src/types/database.types";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  Switch,
-  Text,
-  View,
-} from "react-native";
+import { Alert, ScrollView, Switch, Text, View } from "react-native";
 
 const TIME_OPTIONS: { value: number; label: string }[] = [
   { value: 2, label: "2 min" },
@@ -491,32 +483,17 @@ export default function ProfileScreen() {
           {notifPrefs.daily_checkin_enabled && (
             <View className="mt-3 mb-4">
               <Text className="text-xs text-ink/60 mb-2">Hora</Text>
-              <View className="flex-row flex-wrap gap-2">
-                {CHECKIN_HOUR_PRESETS.map((opt) => {
-                  const active = notifPrefs.daily_checkin_hour === opt.value;
-                  return (
-                    <Pressable
-                      key={opt.value}
-                      onPress={() => handleChangeCheckinHour(opt.value)}
-                      className={cn(
-                        "px-4 py-2 rounded-2xl border",
-                        active
-                          ? "bg-river-500 border-river-500"
-                          : "bg-white border-river-100"
-                      )}
-                    >
-                      <Text
-                        className={cn(
-                          "text-sm font-medium",
-                          active ? "text-white" : "text-ink"
-                        )}
-                      >
-                        {opt.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+              <ChipSelector<string>
+                options={CHECKIN_HOUR_PRESETS.map((o) => ({
+                  value: String(o.value),
+                  label: o.label,
+                }))}
+                selected={[String(notifPrefs.daily_checkin_hour)]}
+                onChange={(next) => {
+                  if (next[0]) handleChangeCheckinHour(Number(next[0]));
+                }}
+                multi={false}
+              />
             </View>
           )}
 
@@ -530,33 +507,17 @@ export default function ProfileScreen() {
           {notifPrefs.exercise_reminder_enabled && (
             <View className="mt-3 mb-4">
               <Text className="text-xs text-ink/60 mb-2">Después de</Text>
-              <View className="flex-row flex-wrap gap-2">
-                {INACTIVITY_DAY_PRESETS.map((opt) => {
-                  const active =
-                    notifPrefs.exercise_reminder_days === opt.value;
-                  return (
-                    <Pressable
-                      key={opt.value}
-                      onPress={() => handleChangeInactivityDays(opt.value)}
-                      className={cn(
-                        "px-4 py-2 rounded-2xl border",
-                        active
-                          ? "bg-river-500 border-river-500"
-                          : "bg-white border-river-100"
-                      )}
-                    >
-                      <Text
-                        className={cn(
-                          "text-sm font-medium",
-                          active ? "text-white" : "text-ink"
-                        )}
-                      >
-                        {opt.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+              <ChipSelector<string>
+                options={INACTIVITY_DAY_PRESETS.map((o) => ({
+                  value: String(o.value),
+                  label: o.label,
+                }))}
+                selected={[String(notifPrefs.exercise_reminder_days)]}
+                onChange={(next) => {
+                  if (next[0]) handleChangeInactivityDays(Number(next[0]));
+                }}
+                multi={false}
+              />
             </View>
           )}
 

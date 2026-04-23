@@ -60,7 +60,7 @@ export default function SignUpScreen() {
   }
 
   return (
-    <Screen>
+    <Screen ambient={false}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"

@@ -28,8 +28,10 @@ import {
 } from "@/src/features/privacy/hooks/useConsents";
 import { cn } from "@/src/shared/lib/cn";
 import { Button } from "@/src/shared/ui/Button";
+import { EmptyState } from "@/src/shared/ui/EmptyState";
 import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
+import { CardSkeleton } from "@/src/shared/ui/Skeleton";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
@@ -57,8 +59,10 @@ export default function ChatScreen() {
   if (consentLoading) {
     return (
       <Screen>
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator />
+        <PageHeader title="Asistente" />
+        <View style={{ paddingHorizontal: 24 }} className="gap-4">
+          <CardSkeleton />
+          <CardSkeleton />
         </View>
       </Screen>
     );
@@ -359,7 +363,7 @@ function ChatBody({ onClose }: { onClose: () => void }) {
             </View>
           )}
 
-          {!isLoading && !hasMessages && <EmptyState />}
+          {!isLoading && !hasMessages && <ChatWelcome />}
 
           {messages?.map((msg) => <MessageBubble key={msg.id} msg={msg} />)}
 
@@ -454,17 +458,15 @@ function ChatBody({ onClose }: { onClose: () => void }) {
   );
 }
 
-function EmptyState() {
+function ChatWelcome() {
   return (
-    <View className="items-center px-4 pt-12">
-      <Text className="text-2xl mb-2">🫧</Text>
-      <Text className="text-base font-semibold text-ink text-center mb-2">
-        ¿Cómo te puedo acompañar?
-      </Text>
-      <Text className="text-sm text-ink/60 text-center leading-5">
-        Cuéntame qué estás sintiendo. Voy a escuchar y, si sirve, te voy a
-        sugerir algo pequeño. Respuestas cortas, sin diagnósticos.
-      </Text>
+    <View className="px-2 pt-6">
+      <EmptyState
+        variant="warm"
+        icon="chatbubbles-outline"
+        title="¿Cómo te puedo acompañar?"
+        description="Cuéntame qué estás sintiendo. Voy a escuchar y, si sirve, te voy a sugerir algo pequeño. Respuestas cortas, sin diagnósticos."
+      />
     </View>
   );
 }

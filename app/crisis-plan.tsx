@@ -9,12 +9,15 @@ import { Button } from "@/src/shared/ui/Button";
 import { Input } from "@/src/shared/ui/Input";
 import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
+import { SectionHeader } from "@/src/shared/ui/SectionHeader";
+import { CardSkeleton } from "@/src/shared/ui/Skeleton";
 import type { CrisisPlan } from "@/src/types/database.types";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import type { ComponentProps } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Linking,
@@ -25,6 +28,8 @@ import {
   TextInput,
   View,
 } from "react-native";
+
+type IconName = ComponentProps<typeof Ionicons>["name"];
 
 type Mode = "view" | "edit";
 
@@ -64,9 +69,14 @@ export default function CrisisPlanScreen() {
   if (isLoading) {
     return (
       <Screen>
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator />
-        </View>
+        <PageHeader title="Mi plan" />
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}>
+          <View className="gap-4">
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+          </View>
+        </ScrollView>
       </Screen>
     );
   }
@@ -244,18 +254,36 @@ function ViewPlan({
         </Pressable>
 
         {/* Secciones del plan */}
-        <Section title="Mis señales de alerta" value={plan.warning_signs} />
-        <Section title="Lo que me ha ayudado antes" value={plan.what_helps} />
-        <Section title="Mi lugar seguro" value={plan.safe_place} />
+        <Section
+          title="Mis señales de alerta"
+          icon="alert-circle-outline"
+          value={plan.warning_signs}
+        />
+        <Section
+          title="Lo que me ha ayudado antes"
+          icon="heart-outline"
+          value={plan.what_helps}
+        />
+        <Section
+          title="Mi lugar seguro"
+          icon="home-outline"
+          value={plan.safe_place}
+        />
         <Section
           title="Lo que más me importa sostener"
+          icon="flower-outline"
           value={plan.reasons_to_stay}
         />
         <Section
           title="Cosas que mejor evito cuando estoy mal"
+          icon="remove-circle-outline"
           value={plan.avoid_list}
         />
-        <Section title="Notas" value={plan.notes} />
+        <Section
+          title="Notas"
+          icon="document-text-outline"
+          value={plan.notes}
+        />
 
         {/* Footer: editar / borrar. Deshabilitados en modo offline. */}
         <View className="mt-4 gap-3">
@@ -290,17 +318,17 @@ function ViewPlan({
 
 function Section({
   title,
+  icon,
   value,
 }: {
   title: string;
+  icon?: IconName;
   value: string | null | undefined;
 }) {
   if (!value || value.trim().length === 0) return null;
   return (
     <View className="mb-5 p-4 rounded-2xl bg-white border border-river-100">
-      <Text className="text-xs uppercase text-ink/60 font-semibold mb-2 tracking-wider">
-        {title}
-      </Text>
+      <SectionHeader label={title} icon={icon} spacing={8} />
       <Text className="text-base text-ink leading-6">{value.trim()}</Text>
     </View>
   );

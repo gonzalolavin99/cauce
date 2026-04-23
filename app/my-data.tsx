@@ -13,7 +13,10 @@ import { useMyDataExport } from "@/src/features/privacy/hooks/useMyDataExport";
 import { Button } from "@/src/shared/ui/Button";
 import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
+import { SectionHeader } from "@/src/shared/ui/SectionHeader";
 import type { ConsentType } from "@/src/types/database.types";
+import { Ionicons } from "@expo/vector-icons";
+import type { ComponentProps } from "react";
 import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
@@ -25,6 +28,8 @@ import {
   Text,
   View,
 } from "react-native";
+
+type IconName = ComponentProps<typeof Ionicons>["name"];
 
 export default function MyDataScreen() {
   const router = useRouter();
@@ -85,7 +90,7 @@ export default function MyDataScreen() {
       <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}>
 
         {/* Exportar */}
-        <Section title="Portabilidad">
+        <Section title="Portabilidad" icon="cloud-download-outline">
           <Text className="text-sm text-ink/70 mb-4 leading-5">
             Descarga una copia de todo lo que tenemos sobre ti en formato
             JSON. Incluye perfil, diagnósticos, preferencias, mood logs,
@@ -102,7 +107,7 @@ export default function MyDataScreen() {
         </Section>
 
         {/* Consentimientos activos */}
-        <Section title="Mis consentimientos">
+        <Section title="Mis consentimientos" icon="shield-checkmark-outline">
           {isLoading && <ActivityIndicator />}
 
           {!isLoading && (
@@ -135,7 +140,7 @@ export default function MyDataScreen() {
         </Section>
 
         {/* Historial de eventos */}
-        <Section title="Historial de consentimientos">
+        <Section title="Historial de consentimientos" icon="time-outline">
           <Text className="text-sm text-ink/70 mb-4 leading-5">
             Registro inmutable de cada vez que aceptaste o revocaste un
             consentimiento. Útil si alguna vez necesitas probarlo.
@@ -180,7 +185,7 @@ export default function MyDataScreen() {
           ))}
         </Section>
 
-        <Section title="Cancelación">
+        <Section title="Cancelación" icon="trash-outline">
           <Text className="text-sm text-ink/70 mb-4 leading-5">
             Para eliminar toda tu información, usa{" "}
             <Text className="font-medium">Perfil → Eliminar mi cuenta</Text>.
@@ -204,16 +209,16 @@ export default function MyDataScreen() {
 
 function Section({
   title,
+  icon,
   children,
 }: {
   title: string;
+  icon?: IconName;
   children: React.ReactNode;
 }) {
   return (
     <View className="mb-10">
-      <Text className="text-xs uppercase text-ink/60 font-semibold mb-4 tracking-wider">
-        {title}
-      </Text>
+      <SectionHeader label={title} icon={icon} spacing={16} />
       {children}
     </View>
   );

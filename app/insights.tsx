@@ -15,19 +15,13 @@
 
 import { HARD_MOODS, useInsights } from "@/src/features/insights/hooks/useInsights";
 import { MOOD_EMOJI, MOOD_LABELS } from "@/src/features/mood/data/options";
+import { EmptyState } from "@/src/shared/ui/EmptyState";
 import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
-import { useRouter } from "expo-router";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { CardSkeleton } from "@/src/shared/ui/Skeleton";
+import { ScrollView, Text, View } from "react-native";
 
 export default function InsightsScreen() {
-  const router = useRouter();
   const { data, isLoading, error } = useInsights();
 
   return (
@@ -39,8 +33,10 @@ export default function InsightsScreen() {
       <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}>
 
         {isLoading && (
-          <View className="py-10 items-center">
-            <ActivityIndicator />
+          <View className="gap-4">
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
           </View>
         )}
 
@@ -48,7 +44,14 @@ export default function InsightsScreen() {
           <ErrorState message="No pudimos cargar tus patrones ahora. Intenta más tarde." />
         )}
 
-        {data && !isLoading && !data.hasData && <EmptyState />}
+        {data && !isLoading && !data.hasData && (
+          <EmptyState
+            variant="warm"
+            icon="sparkles-outline"
+            title="Todavía no hay suficiente para mostrar"
+            description="Cuando registres algunos check-ins o hagas ejercicios, aquí vas a ver cómo te has sentido. No hay tareas ni metas — solo lo que tú quieras anotar."
+          />
+        )}
 
         {data && !isLoading && data.hasData && (
           <View className="gap-5">
@@ -92,21 +95,6 @@ export default function InsightsScreen() {
 // ====================================================================
 // Secciones
 // ====================================================================
-
-function EmptyState() {
-  return (
-    <View className="p-6 rounded-3xl bg-sand border border-river-100">
-      <Text className="text-lg font-semibold text-ink mb-2">
-        Todavía no hay suficiente para mostrar
-      </Text>
-      <Text className="text-sm text-ink/70 leading-6">
-        Cuando registres algunos check-ins o hagas ejercicios, aquí vas a ver
-        cómo te has sentido. No hay tareas ni metas — solo lo que tú quieras
-        anotar.
-      </Text>
-    </View>
-  );
-}
 
 function ErrorState({ message }: { message: string }) {
   return (

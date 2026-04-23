@@ -6,9 +6,12 @@ import { useOnboardingStore } from "@/src/features/onboarding/store";
 import { useSaveOnboarding } from "@/src/features/profile/hooks/useProfile";
 import { Button } from "@/src/shared/ui/Button";
 import { ChipSelector } from "@/src/shared/ui/ChipSelector";
+import { ProgressDots } from "@/src/shared/ui/ProgressDots";
 import { Screen } from "@/src/shared/ui/Screen";
+import { SectionHeader } from "@/src/shared/ui/SectionHeader";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Alert, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 
 export default function PreferencesScreen() {
   const router = useRouter();
@@ -52,42 +55,59 @@ export default function PreferencesScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ padding: 24 }}>
-        <Text className="text-3xl font-bold text-ink mb-2">
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }}>
+        <View className="flex-row items-center justify-between mb-8">
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={12}
+            className="flex-row items-center gap-1 active:opacity-60"
+          >
+            <Ionicons name="chevron-back" size={18} color="#2F6D6E" />
+            <Text className="text-sm text-river-700 font-medium">Atrás</Text>
+          </Pressable>
+          <ProgressDots total={3} current={2} />
+          <Text className="text-xs text-ink/50">Paso 3 de 3</Text>
+        </View>
+
+        <Text className="text-3xl font-bold text-ink mb-3 tracking-tight">
           ¿Qué te ayuda y qué te desregula?
         </Text>
-        <Text className="text-ink/70 mb-6">
+        <Text className="text-ink/70 mb-8 leading-6">
           Elige lo que reconozcas. Puedes cambiar esto cuando quieras.
         </Text>
 
-        <Text className="text-lg font-semibold text-ink mb-3">Me calma</Text>
-        <ChipSelector<string>
-          options={CALMING_INPUTS}
-          selected={calming_inputs}
-          onChange={setCalming}
-          allowCustom
-          addPlaceholder="Ej: abrazar a mi perro"
-        />
-
-        <Text className="text-lg font-semibold text-ink mt-8 mb-3">
-          Me desregula
-        </Text>
-        <ChipSelector<string>
-          options={TRIGGERING_INPUTS}
-          selected={triggering_inputs}
-          onChange={setTriggering}
-          allowCustom
-          addPlaceholder="Ej: recuerdos, conversaciones difíciles"
-        />
-
-        <View className="mt-10">
-          <Button
-            onPress={handleContinue}
-            disabled={saveOnboarding.isPending}
-          >
-            {saveOnboarding.isPending ? "Guardando..." : "Terminar"}
-          </Button>
+        <View className="mb-8">
+          <SectionHeader label="Me calma" icon="sparkles-outline" />
+          <ChipSelector<string>
+            options={CALMING_INPUTS}
+            selected={calming_inputs}
+            onChange={setCalming}
+            allowCustom
+            addPlaceholder="Ej: abrazar a mi perro"
+          />
         </View>
+
+        <View className="mb-10">
+          <SectionHeader label="Me desregula" icon="flash-outline" />
+          <ChipSelector<string>
+            options={TRIGGERING_INPUTS}
+            selected={triggering_inputs}
+            onChange={setTriggering}
+            allowCustom
+            addPlaceholder="Ej: recuerdos, conversaciones difíciles"
+          />
+        </View>
+
+        <Button
+          onPress={handleContinue}
+          loading={saveOnboarding.isPending}
+          disabled={saveOnboarding.isPending}
+        >
+          Terminar
+        </Button>
+        <Text className="text-xs text-ink/50 text-center mt-3">
+          Puedes saltarte esto dejándolo vacío
+        </Text>
       </ScrollView>
     </Screen>
   );
