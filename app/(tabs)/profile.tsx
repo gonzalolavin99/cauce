@@ -28,11 +28,16 @@ import {
   useUpdateProfile,
 } from "@/src/features/profile/hooks/useUpdateProfile";
 import { cn } from "@/src/shared/lib/cn";
+import { Avatar, initialsFrom } from "@/src/shared/ui/Avatar";
 import { Button } from "@/src/shared/ui/Button";
+import { Card } from "@/src/shared/ui/Card";
 import { ChipSelector } from "@/src/shared/ui/ChipSelector";
 import { Input } from "@/src/shared/ui/Input";
+import { ListRow } from "@/src/shared/ui/ListRow";
 import { Screen } from "@/src/shared/ui/Screen";
+import { SectionHeader } from "@/src/shared/ui/SectionHeader";
 import type { Diagnosis, Mobility } from "@/src/types/database.types";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -300,13 +305,45 @@ export default function ProfileScreen() {
     );
   }
 
+  const greeting =
+    profile?.display_name?.trim() ||
+    user?.email?.split("@")[0] ||
+    "tú";
+
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 64 }}>
-        <Text className="text-3xl font-bold text-ink mb-8">Mi cuenta</Text>
+        {/* Header con avatar */}
+        <View className="flex-row items-center gap-4 mb-8">
+          <Avatar
+            initials={initialsFrom(profile?.display_name ?? user?.email)}
+            size="xl"
+            tone="river"
+          />
+          <View className="flex-1">
+            <Text className="text-xs uppercase text-ink/50 font-semibold tracking-wider mb-1">
+              Hola
+            </Text>
+            <Text
+              className="text-2xl font-bold text-ink"
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {greeting}
+            </Text>
+            <Text
+              className="text-xs text-ink/50 mt-0.5"
+              numberOfLines={1}
+              ellipsizeMode="middle"
+            >
+              {user?.email}
+            </Text>
+          </View>
+        </View>
 
         {/* Sección: Info básica */}
-        <Section title="Información">
+        <View className="mb-10">
+          <SectionHeader label="Información" icon="person-outline" />
           <Input
             label="Nombre"
             value={displayName}
@@ -314,9 +351,6 @@ export default function ProfileScreen() {
             placeholder="Cómo quieres que te llamemos"
             autoCapitalize="words"
           />
-          <Text className="text-xs text-ink/50 mb-3">
-            Correo: {user?.email}
-          </Text>
           <Button
             variant="secondary"
             onPress={handleSaveName}
@@ -324,11 +358,12 @@ export default function ProfileScreen() {
           >
             Guardar nombre
           </Button>
-        </Section>
+        </View>
 
         {/* Sección: Diagnósticos */}
-        <Section title="Cómo me identifico">
-          <Text className="text-sm text-ink/60 mb-4">
+        <View className="mb-10">
+          <SectionHeader label="Cómo me identifico" icon="flower-outline" />
+          <Text className="text-sm text-ink/60 mb-4 leading-5">
             No necesitas diagnóstico formal para marcar algo.
           </Text>
           <ChipSelector<Diagnosis>
@@ -345,10 +380,11 @@ export default function ProfileScreen() {
               Guardar diagnósticos
             </Button>
           </View>
-        </Section>
+        </View>
 
         {/* Sección: Preferencias sensoriales */}
-        <Section title="Lo que me calma">
+        <View className="mb-10">
+          <SectionHeader label="Lo que me calma" icon="sparkles-outline" />
           <ChipSelector<string>
             options={CALMING_INPUTS}
             selected={localCalming}
@@ -356,9 +392,10 @@ export default function ProfileScreen() {
             allowCustom
             addPlaceholder="Ej: abrazar a mi perro"
           />
-        </Section>
+        </View>
 
-        <Section title="Lo que me desregula">
+        <View className="mb-10">
+          <SectionHeader label="Lo que me desregula" icon="flash-outline" />
           <ChipSelector<string>
             options={TRIGGERING_INPUTS}
             selected={localTriggering}
@@ -366,10 +403,11 @@ export default function ProfileScreen() {
             allowCustom
             addPlaceholder="Ej: recuerdos, ruido de la ciudad"
           />
-        </Section>
+        </View>
 
         {/* Sección: Tiempo y movilidad */}
-        <Section title="Tiempo disponible habitual">
+        <View className="mb-10">
+          <SectionHeader label="Tiempo disponible habitual" icon="time-outline" />
           <ChipSelector<string>
             options={TIME_OPTIONS.map((o) => ({
               value: String(o.value),
@@ -381,9 +419,10 @@ export default function ProfileScreen() {
             }}
             multi={false}
           />
-        </Section>
+        </View>
 
-        <Section title="Movilidad habitual">
+        <View className="mb-10">
+          <SectionHeader label="Movilidad habitual" icon="walk-outline" />
           <ChipSelector<Mobility>
             options={MOBILITY_OPTIONS}
             selected={[localMobility]}
@@ -401,50 +440,45 @@ export default function ProfileScreen() {
               Guardar preferencias
             </Button>
           </View>
-        </Section>
+        </View>
 
         {/* Sección: Tus patrones (insights) */}
-        <Section title="Tus patrones">
-          <Text className="text-sm text-ink/60 mb-4 leading-5">
-            Un resumen honesto de lo que tú mismo/a has registrado en los
-            últimos 30 días. Sin rachas ni puntajes.
-          </Text>
-          <Pressable
+        <View className="mb-10">
+          <SectionHeader label="Tus patrones" icon="pulse-outline" />
+          <ListRow
+            title="Ver mis patrones"
+            subtitle="Check-ins, mood predominante, ejercicios usados"
+            icon="analytics-outline"
             onPress={() => router.push("/insights")}
-            className="p-4 rounded-2xl bg-river-50 border border-river-100 active:bg-river-100"
-          >
-            <Text className="text-river-900 font-medium">Ver mis patrones</Text>
-            <Text className="text-xs text-ink/60 mt-0.5">
-              Check-ins, mood predominante, ejercicios usados
-            </Text>
-          </Pressable>
-        </Section>
+          />
+        </View>
 
-        {/* Sección: Recordatorios (notificaciones locales) */}
-        <Section title="Recordatorios">
+        {/* Sección: Recordatorios */}
+        <View className="mb-10">
+          <SectionHeader label="Recordatorios" icon="notifications-outline" />
           <Text className="text-sm text-ink/60 mb-4 leading-5">
             Notificaciones suaves, sólo en tu teléfono. Todo apagado por
             defecto — eliges qué te hace sentido.
           </Text>
 
           {!isNotificationsAvailable() && (
-            <View className="mb-4 p-3 rounded-xl bg-sand border border-river-100">
+            <Card variant="warm" className="mb-4">
               <Text className="text-xs text-ink/70 leading-4">
                 Las notificaciones requieren una versión de desarrollo de la
                 app (dev build). En la versión actual puedes guardar tus
                 preferencias, pero los recordatorios no se programan todavía.
               </Text>
-            </View>
+            </Card>
           )}
 
           {isNotificationsAvailable() && notifPermissionGranted === false && (
-            <View className="mb-4 p-3 rounded-xl bg-sand border border-river-100">
-              <Text className="text-xs text-ink/70">
+            <Card variant="warm" className="mb-4">
+              <Text className="text-xs text-ink/70 leading-5">
                 No tenemos permiso de notificaciones. Al activar un
                 recordatorio te lo pediremos; si lo bloqueaste, tendrás
                 que habilitarlo desde los ajustes del teléfono.
               </Text>
-            </View>
+            </Card>
           )}
 
           <ToggleRow
@@ -532,10 +566,14 @@ export default function ProfileScreen() {
             value={notifPrefs.post_crisis_checkin_enabled}
             onChange={handleTogglePostCrisis}
           />
-        </Section>
+        </View>
 
         {/* Sección: Toggles */}
-        <Section title="Ajustes del ejercicio">
+        <View className="mb-10">
+          <SectionHeader
+            label="Ajustes del ejercicio"
+            icon="options-outline"
+          />
           <ToggleRow
             label="Guía por voz"
             description="La app te habla durante los ejercicios"
@@ -548,85 +586,66 @@ export default function ProfileScreen() {
             value={prefs?.prefers_haptics ?? true}
             onChange={handleToggleHaptics}
           />
-        </Section>
+        </View>
 
-        {/* Sección: Sesión */}
-        <Section title="Sesión">
-          <Pressable
-            onPress={handleSignOut}
-            className="p-4 rounded-2xl bg-river-50 border border-river-100"
-          >
-            <Text className="text-river-900 font-medium text-center">
-              Cerrar sesión
-            </Text>
-          </Pressable>
-        </Section>
-
-        {/* Sección: Privacidad */}
-        <Section title="Privacidad y datos">
+        {/* Sección: Privacidad y datos */}
+        <View className="mb-10">
+          <SectionHeader
+            label="Privacidad y datos"
+            icon="shield-checkmark-outline"
+          />
           <Text className="text-sm text-ink/60 mb-4 leading-5">
             Tus datos son tuyos. Puedes ver, exportar o eliminar todo
             cuando quieras.
           </Text>
 
-          <Pressable
-            onPress={() => router.push("/my-data")}
-            className="mb-3 p-4 rounded-2xl bg-river-50 border border-river-100 active:bg-river-100"
-          >
-            <Text className="text-river-900 font-medium">Mis datos</Text>
-            <Text className="text-xs text-ink/60 mt-0.5">
-              Ver, exportar, revocar consentimientos
-            </Text>
-          </Pressable>
+          <View className="gap-3">
+            <ListRow
+              title="Mis datos"
+              subtitle="Ver, exportar, revocar consentimientos"
+              icon="document-text-outline"
+              onPress={() => router.push("/my-data")}
+            />
+            <ListRow
+              title="Política de privacidad"
+              subtitle="Cómo tratamos tus datos"
+              icon="book-outline"
+              onPress={() => router.push("/privacy")}
+            />
+          </View>
+        </View>
 
-          <Pressable
-            onPress={() => router.push("/privacy")}
-            className="mb-4 p-4 rounded-2xl bg-river-50 border border-river-100 active:bg-river-100"
-          >
-            <Text className="text-river-900 font-medium">
-              Política de privacidad
-            </Text>
-            <Text className="text-xs text-ink/60 mt-0.5">
-              Cómo tratamos tus datos
-            </Text>
-          </Pressable>
+        {/* Sección: Cuenta */}
+        <View className="mb-6">
+          <SectionHeader label="Cuenta" icon="key-outline" />
+          <View className="gap-3">
+            <ListRow
+              title="Cerrar sesión"
+              icon="log-out-outline"
+              onPress={handleSignOut}
+              showChevron={false}
+            />
+            <ListRow
+              title={
+                deleteAccount.isPending
+                  ? "Eliminando..."
+                  : "Eliminar mi cuenta"
+              }
+              subtitle="Borra toda tu información permanentemente"
+              icon="trash-outline"
+              tone="destructive"
+              onPress={handleDeleteAccount}
+              disabled={deleteAccount.isPending}
+              showChevron={false}
+            />
+          </View>
+        </View>
 
-          <Pressable
-            onPress={handleDeleteAccount}
-            disabled={deleteAccount.isPending}
-            className="p-4 rounded-2xl bg-alert/10 border border-alert/30 active:bg-alert/20"
-          >
-            <Text className="text-alert font-medium text-center">
-              {deleteAccount.isPending
-                ? "Eliminando..."
-                : "Eliminar mi cuenta"}
-            </Text>
-          </Pressable>
-          <Text className="text-xs text-ink/40 mt-3 leading-4 text-center">
-            Cumplimiento Ley 19.628 y Ley 21.719 (Chile)
-          </Text>
-        </Section>
+        <Text className="text-xs text-ink/40 mt-2 leading-4 text-center">
+          Cumplimiento Ley 19.628 y Ley 21.719 (Chile)
+        </Text>
       </ScrollView>
     </Screen>
-  );
-}
-
-// --- Helpers locales ---
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <View className="mb-10">
-      <Text className="text-xs uppercase text-ink/60 font-semibold mb-4 tracking-wider">
-        {title}
-      </Text>
-      {children}
-    </View>
   );
 }
 

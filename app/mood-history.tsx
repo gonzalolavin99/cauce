@@ -17,19 +17,16 @@ import {
 } from "@/src/features/mood/engine/insights";
 import { useMoodLogs } from "@/src/features/mood/hooks/useMoodLogs";
 import { cn } from "@/src/shared/lib/cn";
+import { Button } from "@/src/shared/ui/Button";
+import { EmptyState } from "@/src/shared/ui/EmptyState";
 import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
+import { CardSkeleton, Skeleton } from "@/src/shared/ui/Skeleton";
 import type { MoodLog } from "@/src/types/database.types";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 
 type TimeRange = 7 | 30;
 
@@ -67,9 +64,20 @@ export default function MoodHistoryScreen() {
   if (isLoading) {
     return (
       <Screen>
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator />
-        </View>
+        <PageHeader
+          title="Mi historial"
+          subtitle="Patrones sin puntajes ni rachas agresivas. Solo lo que anotaste."
+        />
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}>
+          <View className="flex-row gap-3 mb-6">
+            <Skeleton width="48%" height={40} radius={12} />
+            <Skeleton width="48%" height={40} radius={12} />
+          </View>
+          <View className="gap-3 mb-6">
+            <CardSkeleton />
+            <CardSkeleton />
+          </View>
+        </ScrollView>
       </Screen>
     );
   }
@@ -100,22 +108,14 @@ export default function MoodHistoryScreen() {
 
         {/* Estado vacío */}
         {!hasData && (
-          <View className="items-center py-10 px-4 rounded-3xl bg-sand border border-river-100 mb-6">
-            <Text className="text-3xl mb-2">📝</Text>
-            <Text className="text-base font-semibold text-ink text-center mb-2">
-              No hay registros en este periodo
-            </Text>
-            <Text className="text-sm text-ink/60 text-center leading-5 mb-4">
-              Cuando anotes cómo te sientes, verás acá los patrones.
-            </Text>
-            <Pressable
-              onPress={handleNewEntry}
-              className="px-4 py-2 rounded-xl bg-river-500 active:bg-river-700"
-            >
-              <Text className="text-white font-semibold">
-                Registrar ahora
-              </Text>
-            </Pressable>
+          <View className="mb-6">
+            <EmptyState
+              variant="warm"
+              icon="document-text-outline"
+              title="No hay registros en este periodo"
+              description="Cuando anotes cómo te sientes, verás acá los patrones."
+              action={<Button onPress={handleNewEntry}>Registrar ahora</Button>}
+            />
           </View>
         )}
 

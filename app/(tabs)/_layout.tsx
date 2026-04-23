@@ -2,6 +2,7 @@ import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { REQUIRED_CONSENTS } from "@/src/features/privacy/constants";
 import { useConsents } from "@/src/features/privacy/hooks/useConsents";
 import { useProfile } from "@/src/features/profile/hooks/useProfile";
+import { AppTabBar } from "@/src/shared/ui/TabBar";
 import { Redirect, Tabs } from "expo-router";
 
 export default function TabsLayout() {
@@ -27,10 +28,8 @@ export default function TabsLayout() {
 
   return (
     <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: "#4E8B8C",
-      }}
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <AppTabBar {...props} />}
     >
       <Tabs.Screen name="index" options={{ title: "Inicio" }} />
       <Tabs.Screen name="explore" options={{ title: "Explorar" }} />

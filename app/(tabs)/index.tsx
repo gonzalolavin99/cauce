@@ -7,21 +7,17 @@ import {
 } from "@/src/features/mood/data/options";
 import { useMoodLogs } from "@/src/features/mood/hooks/useMoodLogs";
 import { useProfile } from "@/src/features/profile/hooks/useProfile";
-import { cn } from "@/src/shared/lib/cn";
 import { useReducedMotion } from "@/src/shared/lib/useReducedMotion";
 import { Card } from "@/src/shared/ui/Card";
+import { EmptyState } from "@/src/shared/ui/EmptyState";
 import { Screen } from "@/src/shared/ui/Screen";
+import { CardSkeleton } from "@/src/shared/ui/Skeleton";
+import { StaggerItem } from "@/src/shared/ui/StaggerItem";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import Animated, {
   cancelAnimation,
   Easing,
@@ -161,45 +157,47 @@ export default function HomeScreen() {
         </View>
 
         {/* Hero CTA con breathing animation */}
-        <Animated.View style={breathStyle}>
-          <Pressable
-            onPress={handleRegulatePress}
-            className="rounded-3xl overflow-hidden bg-river-500 active:bg-river-700"
-            style={{
-              minHeight: 220,
-              shadowColor: "#193838",
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.18,
-              shadowRadius: 16,
-              elevation: 4,
-            }}
-          >
-            {/* Halo decorativo — un círculo traslúcido que sugiere agua */}
-            <View
-              pointerEvents="none"
-              className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-white/10"
-            />
-            <View
-              pointerEvents="none"
-              className="absolute -bottom-20 -left-10 w-40 h-40 rounded-full bg-white/5"
-            />
+        <StaggerItem index={0}>
+          <Animated.View style={breathStyle}>
+            <Pressable
+              onPress={handleRegulatePress}
+              className="rounded-3xl overflow-hidden bg-river-500 active:bg-river-700"
+              style={{
+                minHeight: 220,
+                shadowColor: "#193838",
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.18,
+                shadowRadius: 16,
+                elevation: 4,
+              }}
+            >
+              {/* Halo decorativo — un círculo traslúcido que sugiere agua */}
+              <View
+                pointerEvents="none"
+                className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-white/10"
+              />
+              <View
+                pointerEvents="none"
+                className="absolute -bottom-20 -left-10 w-40 h-40 rounded-full bg-white/5"
+              />
 
-            <View className="flex-1 items-center justify-center px-6 py-10">
-              <View className="w-14 h-14 rounded-full bg-white/20 items-center justify-center mb-4">
-                <Ionicons name="water" size={28} color="white" />
+              <View className="flex-1 items-center justify-center px-6 py-10">
+                <View className="w-14 h-14 rounded-full bg-white/20 items-center justify-center mb-4">
+                  <Ionicons name="water" size={28} color="white" />
+                </View>
+                <Text className="text-white text-3xl font-bold text-center tracking-tight">
+                  Necesito regularme
+                </Text>
+                <Text className="text-white/80 text-base text-center mt-2">
+                  Un ejercicio corto, ahora
+                </Text>
               </View>
-              <Text className="text-white text-3xl font-bold text-center tracking-tight">
-                Necesito regularme
-              </Text>
-              <Text className="text-white/80 text-base text-center mt-2">
-                Un ejercicio corto, ahora
-              </Text>
-            </View>
-          </Pressable>
-        </Animated.View>
+            </Pressable>
+          </Animated.View>
+        </StaggerItem>
 
         {/* Mood quick action */}
-        <View className="mt-6">
+        <StaggerItem index={1} style={{ marginTop: 24 }}>
           <Card onPress={handleMoodPress} variant="warm" unpadded>
             <View className="flex-row items-center p-4">
               <View className="w-12 h-12 rounded-2xl bg-white/60 items-center justify-center mr-3">
@@ -230,10 +228,10 @@ export default function HomeScreen() {
               </Text>
             </Pressable>
           )}
-        </View>
+        </StaggerItem>
 
         {/* Chat con Cauce */}
-        <View className="mt-3">
+        <StaggerItem index={2} style={{ marginTop: 12 }}>
           <Card onPress={handleChatPress} unpadded>
             <View className="flex-row items-center p-4">
               <View className="w-12 h-12 rounded-2xl bg-river-50 items-center justify-center mr-3">
@@ -250,7 +248,7 @@ export default function HomeScreen() {
               <Ionicons name="chevron-forward" size={20} color="#2E5F60" />
             </View>
           </Card>
-        </View>
+        </StaggerItem>
 
         {/* Sesiones rápidas */}
         <View className="mt-10">
@@ -273,18 +271,27 @@ export default function HomeScreen() {
             )}
           </View>
 
-          {isLoading && <ActivityIndicator />}
+          {isLoading && (
+            <View className="gap-3">
+              <CardSkeleton />
+              <CardSkeleton />
+            </View>
+          )}
 
           {!isLoading && topThree.length === 0 && (
-            <Card variant="muted">
-              <Text className="text-ink/60 text-center">
-                Todavía no hay ejercicios cargados.
-              </Text>
-            </Card>
+            <EmptyState
+              icon="leaf-outline"
+              title="Sin ejercicios todavía"
+              description="Pronto vas a ver sesiones cortas sugeridas para ti."
+            />
           )}
 
           {topThree.map(({ exercise }, idx) => (
-            <View key={exercise.id} className={cn(idx > 0 && "mt-3")}>
+            <StaggerItem
+              key={exercise.id}
+              index={idx + 3}
+              style={idx > 0 ? { marginTop: 12 } : undefined}
+            >
               <Card
                 onPress={() => handleQuickSession(exercise.id)}
                 variant="muted"
@@ -311,7 +318,7 @@ export default function HomeScreen() {
                   </View>
                 </View>
               </Card>
-            </View>
+            </StaggerItem>
           ))}
         </View>
       </ScrollView>
