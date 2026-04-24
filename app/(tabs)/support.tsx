@@ -158,7 +158,7 @@ export default function SupportScreen() {
           </View>
         </Card>
 
-        <Text className="text-xs text-ink/40 text-center mt-6">
+        <Text className="text-xs text-ink/70 text-center mt-6">
           Tu privacidad importa. No registramos cuándo ves esta pantalla ni a
           quién llamas.
         </Text>

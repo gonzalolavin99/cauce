@@ -16,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ComponentProps } from "react";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -328,7 +328,7 @@ function ViewPlan({
           )}
         </View>
 
-        <Text className="text-xs text-ink/40 text-center mt-6 leading-4">
+        <Text className="text-xs text-ink/70 text-center mt-6 leading-4">
           Tu plan es privado. Solo tú lo ves. Se guarda encriptado en tu
           cuenta.
         </Text>
@@ -484,6 +484,7 @@ function EditPlan({
               value={form.trusted_contact_name ?? ""}
               onChangeText={(v) => set("trusted_contact_name", v)}
               placeholder="Nombre"
+              accessibilityLabel="Nombre del contacto de confianza"
               autoCapitalize="words"
               maxLength={80}
             />
@@ -491,6 +492,8 @@ function EditPlan({
               value={form.trusted_contact_phone ?? ""}
               onChangeText={(v) => set("trusted_contact_phone", v)}
               placeholder="Teléfono (ej: +56 9 1234 5678)"
+              accessibilityLabel="Teléfono del contacto"
+              accessibilityHint="Formato internacional, por ejemplo +56 9 1234 5678"
               keyboardType="phone-pad"
               maxLength={24}
             />
@@ -498,6 +501,7 @@ function EditPlan({
               value={form.trusted_contact_relation ?? ""}
               onChangeText={(v) => set("trusted_contact_relation", v)}
               placeholder="Relación (ej: mamá, amiga, terapeuta)"
+              accessibilityLabel="Relación con el contacto"
               maxLength={40}
             />
           </Field>
@@ -541,7 +545,7 @@ function EditPlan({
             </Button>
           </View>
 
-          <Text className="text-xs text-ink/40 text-center mt-6 leading-4">
+          <Text className="text-xs text-ink/70 text-center mt-6 leading-4">
             Tu plan es privado. Solo tú lo ves.
           </Text>
         </ScrollView>

@@ -83,7 +83,7 @@ export default function InsightsScreen() {
           </View>
         )}
 
-        <Text className="text-xs text-ink/40 text-center mt-8 leading-5">
+        <Text className="text-xs text-ink/70 text-center mt-8 leading-5">
           Esta pantalla es solo para ti. No la ve nadie más, ni se usa para
           evaluarte. Son los datos que tú mismo/a registraste.
         </Text>

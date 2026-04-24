@@ -390,7 +390,12 @@ function ChatBody({ onClose }: { onClose: () => void }) {
           )}
 
           {sendMessage.isPending && (
-            <View className="my-2 px-4 py-3 rounded-2xl self-start bg-river-50 border border-river-100">
+            <View
+              accessible
+              accessibilityLiveRegion="polite"
+              accessibilityLabel="El asistente está pensando"
+              className="my-2 px-4 py-3 rounded-2xl self-start bg-river-50 border border-river-100"
+            >
               <Text className="text-sm text-ink/50">Pensando…</Text>
             </View>
           )}
