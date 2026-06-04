@@ -1,8 +1,8 @@
 import type {
-  Diagnosis,
-  Exercise,
-  Feeling,
-  Mobility,
+    Diagnosis,
+    Exercise,
+    Feeling,
+    Mobility,
 } from "@/src/types/database.types";
 
 export interface RecommendationContext {
@@ -75,9 +75,31 @@ function mobilityCompatible(
   return false;
 }
 
+/**
+ * Hints precomputados a partir del contexto. Se calculan UNA vez por
+ * recomendación (no por ejercicio) para evitar reconstruir los Sets en cada
+ * iteración de `recommendExercises`.
+ */
+interface PrecomputedHints {
+  preferredByDiagnosis: Set<string>;
+  preferredByCalming: Set<string>;
+}
+
+function precomputeHints(ctx: RecommendationContext): PrecomputedHints {
+  return {
+    preferredByDiagnosis: new Set(
+      ctx.diagnoses.flatMap((d) => DIAGNOSIS_CATEGORY_HINTS[d] ?? [])
+    ),
+    preferredByCalming: new Set(
+      ctx.calmingInputs.flatMap((c) => CALMING_CATEGORY_HINTS[c] ?? [])
+    ),
+  };
+}
+
 export function scoreExercise(
   exercise: Exercise,
-  ctx: RecommendationContext
+  ctx: RecommendationContext,
+  hints: PrecomputedHints = precomputeHints(ctx)
 ): ScoredExercise {
   const targets = toStringArray(exercise.targets);
   const reasons: string[] = [];
@@ -95,19 +117,13 @@ export function scoreExercise(
   }
 
   // +2 por cada diagnóstico del usuario cuya categoría recomendada matchee
-  const preferredByDiagnosis = new Set(
-    ctx.diagnoses.flatMap((d) => DIAGNOSIS_CATEGORY_HINTS[d] ?? [])
-  );
-  if (exercise.category && preferredByDiagnosis.has(exercise.category)) {
+  if (exercise.category && hints.preferredByDiagnosis.has(exercise.category)) {
     score += 2;
     reasons.push("Recomendado para tu perfil");
   }
 
   // +1 por cada preferencia sensorial que sugiere esta categoría
-  const preferredByCalming = new Set(
-    ctx.calmingInputs.flatMap((c) => CALMING_CATEGORY_HINTS[c] ?? [])
-  );
-  if (exercise.category && preferredByCalming.has(exercise.category)) {
+  if (exercise.category && hints.preferredByCalming.has(exercise.category)) {
     score += 1;
     reasons.push("Alineado con lo que te calma");
   }
@@ -133,8 +149,10 @@ export function recommendExercises(
   exercises: Exercise[],
   ctx: RecommendationContext
 ): ScoredExercise[] {
+  // Precomputamos los hints una sola vez y los reutilizamos en cada scoring.
+  const hints = precomputeHints(ctx);
   return exercises
-    .map((ex) => scoreExercise(ex, ctx))
+    .map((ex) => scoreExercise(ex, ctx, hints))
     .filter((s) => s.score > -100)
     .sort((a, b) => b.score - a.score);
 }

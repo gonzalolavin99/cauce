@@ -1,30 +1,30 @@
 import { detectCrisis } from "@/src/features/ai-advisor/engine/crisis";
 import {
-  useActiveConversation,
-  useMessages,
-  type AiMessage,
+    useActiveConversation,
+    useMessages,
+    type AiMessage,
 } from "@/src/features/ai-advisor/hooks/useAiConversation";
 import { useSendMessage } from "@/src/features/ai-advisor/hooks/useSendMessage";
 import {
-  isCrisisPlanUseful,
-  useCrisisPlan,
+    isCrisisPlanUseful,
+    useCrisisPlan,
 } from "@/src/features/crisis/hooks/useCrisisPlan";
 import {
-  resolvePrefs,
-  useNotificationPreferences,
+    resolvePrefs,
+    useNotificationPreferences,
 } from "@/src/features/notifications/hooks/useNotificationPreferences";
 import {
-  ensureAndroidChannel,
-  hasNotificationPermission,
-  schedulePostCrisisCheckin,
+    ensureAndroidChannel,
+    hasNotificationPermission,
+    schedulePostCrisisCheckin,
 } from "@/src/features/notifications/service";
 import {
-  CONSENT_DESCRIPTIONS,
-  CONSENT_LABELS,
+    CONSENT_DESCRIPTIONS,
+    CONSENT_LABELS,
 } from "@/src/features/privacy/constants";
 import {
-  useConsents,
-  useRecordConsent,
+    useConsents,
+    useRecordConsent,
 } from "@/src/features/privacy/hooks/useConsents";
 import { cn } from "@/src/shared/lib/cn";
 import { Button } from "@/src/shared/ui/Button";
@@ -35,17 +35,17 @@ import { CardSkeleton } from "@/src/shared/ui/Skeleton";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 
 export default function ChatScreen() {
@@ -500,7 +500,11 @@ function ChatWelcome() {
   );
 }
 
-function MessageBubble({ msg }: { msg: AiMessage }) {
+const MessageBubble = memo(function MessageBubble({
+  msg,
+}: {
+  msg: AiMessage;
+}) {
   const isUser = msg.role === "user";
   return (
     <View
@@ -526,4 +530,4 @@ function MessageBubble({ msg }: { msg: AiMessage }) {
       )}
     </View>
   );
-}
+});

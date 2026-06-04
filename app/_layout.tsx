@@ -1,9 +1,10 @@
 import { useColorScheme } from "@/components/useColorScheme";
 import { useScheduleNotifications } from "@/src/features/notifications/hooks/useScheduleNotifications";
 import {
-  addTapListener,
-  configureForegroundBehavior,
+    addTapListener,
+    configureForegroundBehavior,
 } from "@/src/features/notifications/service";
+import { InstallPrompt } from "@/src/features/pwa/InstallPrompt";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
@@ -103,6 +104,7 @@ export default function RootLayout() {
           />
           <Stack.Screen name="+not-found" />
         </Stack>
+        <InstallPrompt />
       </ThemeProvider>
     </QueryClientProvider>
   );

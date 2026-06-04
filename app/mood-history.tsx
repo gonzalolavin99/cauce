@@ -23,10 +23,15 @@ import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
 import { CardSkeleton, Skeleton } from "@/src/shared/ui/Skeleton";
 import type { MoodLog } from "@/src/types/database.types";
+import { FlashList } from "@shopify/flash-list";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+
+type MoodListRow =
+  | { kind: "day"; key: string; dateKey: string }
+  | { kind: "entry"; key: string; log: MoodLog };
 
 type TimeRange = 7 | 30;
 
@@ -50,6 +55,38 @@ export default function MoodHistoryScreen() {
   const streak = useMemo(() => computeStreak(logs ?? []), [logs]);
   const avg = useMemo(() => averageScore(allInRange), [allInRange]);
   const freq = useMemo(() => moodFrequency(allInRange), [allInRange]);
+
+  const entryRows = useMemo<MoodListRow[]>(() => {
+    const nonEmpty = [...buckets]
+      .reverse()
+      .filter((b) => b.entries.length > 0);
+    const rows: MoodListRow[] = [];
+    for (const bucket of nonEmpty) {
+      rows.push({
+        kind: "day",
+        key: `day-${bucket.dateKey}`,
+        dateKey: bucket.dateKey,
+      });
+      for (const log of [...bucket.entries].reverse()) {
+        rows.push({ kind: "entry", key: log.id, log });
+      }
+    }
+    return rows;
+  }, [buckets]);
+
+  const renderRow = useCallback(
+    ({ item }: { item: MoodListRow }) => {
+      if (item.kind === "day") {
+        return (
+          <Text className="text-xs uppercase text-ink/50 font-semibold mb-2 mt-3 tracking-wider">
+            {humanDate(item.dateKey)}
+          </Text>
+        );
+      }
+      return <EntryRow log={item.log} />;
+    },
+    []
+  );
 
   function handleSetRange(r: TimeRange) {
     Haptics.selectionAsync().catch(() => {});
@@ -85,106 +122,121 @@ export default function MoodHistoryScreen() {
   const totalEntries = allInRange.length;
   const hasData = totalEntries > 0;
 
+  const ListHeader = (
+    <View>
+      {/* Range selector */}
+      <View className="flex-row gap-2 mb-6">
+        <RangeChip
+          label="Últimos 7 días"
+          active={range === 7}
+          onPress={() => handleSetRange(7)}
+        />
+        <RangeChip
+          label="Últimos 30 días"
+          active={range === 30}
+          onPress={() => handleSetRange(30)}
+        />
+      </View>
+
+      {/* Estado vacío */}
+      {!hasData && (
+        <View className="mb-6">
+          <EmptyState
+            variant="warm"
+            icon="document-text-outline"
+            title="No hay registros en este periodo"
+            description="Cuando anotes cómo te sientes, verás acá los patrones."
+            action={<Button onPress={handleNewEntry}>Registrar ahora</Button>}
+          />
+        </View>
+      )}
+
+      {/* Stats cards */}
+      {hasData && (
+        <View className="flex-row flex-wrap gap-3 mb-6">
+          <StatCard
+            label="Check-ins"
+            value={String(totalEntries)}
+            hint={range === 7 ? "esta semana" : "este mes"}
+          />
+          <StatCard
+            label="Racha"
+            value={streak > 0 ? `${streak} día${streak === 1 ? "" : "s"}` : "—"}
+            hint={streak > 0 ? "seguidos" : "aún no"}
+          />
+          <StatCard
+            label="Promedio"
+            value={avg ? `${avg.toFixed(1)}/5` : "—"}
+            hint="de bienestar"
+          />
+        </View>
+      )}
+
+      {/* Bar chart */}
+      {hasData && (
+        <View className="mb-8 p-4 rounded-3xl bg-white border border-river-100">
+          <Text className="text-xs uppercase text-ink/60 font-semibold mb-4 tracking-wider">
+            {range === 7 ? "Últimos 7 días" : "Últimos 30 días"}
+          </Text>
+
+          <DayBarChart buckets={buckets} range={range} />
+
+          <Text className="text-xs text-ink/40 mt-4 leading-4">
+            Altura = estado promedio del día · color = estado más frecuente.
+            Días sin registro aparecen en gris.
+          </Text>
+        </View>
+      )}
+
+      {/* Distribución */}
+      {hasData && (
+        <View className="mb-8 p-4 rounded-3xl bg-white border border-river-100">
+          <Text className="text-xs uppercase text-ink/60 font-semibold mb-4 tracking-wider">
+            Distribución
+          </Text>
+          <MoodDistribution freq={freq} total={totalEntries} />
+        </View>
+      )}
+
+      {/* CTA nuevo registro */}
+      {hasData && (
+        <Pressable
+          onPress={handleNewEntry}
+          className="mb-8 p-4 rounded-2xl bg-river-500 active:bg-river-700"
+        >
+          <Text className="text-white text-base font-semibold text-center">
+            Nuevo check-in
+          </Text>
+        </Pressable>
+      )}
+
+      {hasData && entryRows.length > 0 && (
+        <Text className="text-lg font-semibold text-ink mb-4">Entradas</Text>
+      )}
+    </View>
+  );
+
+  const ListFooter = (
+    <Text className="text-xs text-ink/40 text-center mt-6 leading-4">
+      Tus registros son privados. Solo tú los ves.
+    </Text>
+  );
+
   return (
     <Screen>
       <PageHeader
         title="Mi historial"
         subtitle="Patrones sin puntajes ni rachas agresivas. Solo lo que anotaste."
       />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}>
-        {/* Range selector */}
-        <View className="flex-row gap-2 mb-6">
-          <RangeChip
-            label="Últimos 7 días"
-            active={range === 7}
-            onPress={() => handleSetRange(7)}
-          />
-          <RangeChip
-            label="Últimos 30 días"
-            active={range === 30}
-            onPress={() => handleSetRange(30)}
-          />
-        </View>
-
-        {/* Estado vacío */}
-        {!hasData && (
-          <View className="mb-6">
-            <EmptyState
-              variant="warm"
-              icon="document-text-outline"
-              title="No hay registros en este periodo"
-              description="Cuando anotes cómo te sientes, verás acá los patrones."
-              action={<Button onPress={handleNewEntry}>Registrar ahora</Button>}
-            />
-          </View>
-        )}
-
-        {/* Stats cards */}
-        {hasData && (
-          <View className="flex-row flex-wrap gap-3 mb-6">
-            <StatCard
-              label="Check-ins"
-              value={String(totalEntries)}
-              hint={range === 7 ? "esta semana" : "este mes"}
-            />
-            <StatCard
-              label="Racha"
-              value={streak > 0 ? `${streak} día${streak === 1 ? "" : "s"}` : "—"}
-              hint={streak > 0 ? "seguidos" : "aún no"}
-            />
-            <StatCard
-              label="Promedio"
-              value={avg ? `${avg.toFixed(1)}/5` : "—"}
-              hint="de bienestar"
-            />
-          </View>
-        )}
-
-        {/* Bar chart */}
-        {hasData && (
-          <View className="mb-8 p-4 rounded-3xl bg-white border border-river-100">
-            <Text className="text-xs uppercase text-ink/60 font-semibold mb-4 tracking-wider">
-              {range === 7 ? "Últimos 7 días" : "Últimos 30 días"}
-            </Text>
-
-            <DayBarChart buckets={buckets} range={range} />
-
-            <Text className="text-xs text-ink/40 mt-4 leading-4">
-              Altura = estado promedio del día · color = estado más frecuente.
-              Días sin registro aparecen en gris.
-            </Text>
-          </View>
-        )}
-
-        {/* Distribución */}
-        {hasData && (
-          <View className="mb-8 p-4 rounded-3xl bg-white border border-river-100">
-            <Text className="text-xs uppercase text-ink/60 font-semibold mb-4 tracking-wider">
-              Distribución
-            </Text>
-            <MoodDistribution freq={freq} total={totalEntries} />
-          </View>
-        )}
-
-        {/* CTA nuevo registro */}
-        {hasData && (
-          <Pressable
-            onPress={handleNewEntry}
-            className="mb-8 p-4 rounded-2xl bg-river-500 active:bg-river-700"
-          >
-            <Text className="text-white text-base font-semibold text-center">
-              Nuevo check-in
-            </Text>
-          </Pressable>
-        )}
-
-        {/* Entries por día */}
-        {hasData && <EntriesByDay buckets={buckets} />}
-
-        <Text className="text-xs text-ink/40 text-center mt-6 leading-4">
-          Tus registros son privados. Solo tú los ves.
-        </Text>
-      </ScrollView>
+      <FlashList
+        data={entryRows}
+        renderItem={renderRow}
+        keyExtractor={(item) => item.key}
+        getItemType={(item) => item.kind}
+        ListHeaderComponent={ListHeader}
+        ListFooterComponent={ListFooter}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}
+      />
     </Screen>
   );
 }
@@ -247,7 +299,7 @@ function StatCard({
   );
 }
 
-function DayBarChart({
+const DayBarChart = memo(function DayBarChart({
   buckets,
   range,
 }: {
@@ -334,7 +386,7 @@ function DayBarChart({
       </View>
     </View>
   );
-}
+});
 
 function shortDate(dateKey: string): string {
   const [, m, d] = dateKey.split("-");
@@ -345,7 +397,7 @@ function todayKey(): string {
   return toLocalDateKey(new Date().toISOString());
 }
 
-function MoodDistribution({
+const MoodDistribution = memo(function MoodDistribution({
   freq,
   total,
 }: {
@@ -384,34 +436,9 @@ function MoodDistribution({
       })}
     </View>
   );
-}
+});
 
-function EntriesByDay({ buckets }: { buckets: DayBucket[] }) {
-  // Mostrar los días más recientes primero, saltando los vacíos
-  const nonEmpty = [...buckets].reverse().filter((b) => b.entries.length > 0);
-
-  if (nonEmpty.length === 0) return null;
-
-  return (
-    <View>
-      <Text className="text-lg font-semibold text-ink mb-4">Entradas</Text>
-
-      {nonEmpty.map((bucket) => (
-        <View key={bucket.dateKey} className="mb-5">
-          <Text className="text-xs uppercase text-ink/50 font-semibold mb-2 tracking-wider">
-            {humanDate(bucket.dateKey)}
-          </Text>
-
-          {[...bucket.entries].reverse().map((log) => (
-            <EntryRow key={log.id} log={log} />
-          ))}
-        </View>
-      ))}
-    </View>
-  );
-}
-
-function EntryRow({ log }: { log: MoodLog }) {
+const EntryRow = memo(function EntryRow({ log }: { log: MoodLog }) {
   const moodKey = (log.mood ?? "neutral") as MoodValue;
   const emoji = MOOD_EMOJI[moodKey] ?? "·";
   const label = MOOD_LABELS[moodKey] ?? log.mood ?? "—";
@@ -441,4 +468,4 @@ function EntryRow({ log }: { log: MoodLog }) {
       )}
     </View>
   );
-}
+});

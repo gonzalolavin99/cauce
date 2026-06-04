@@ -8,11 +8,12 @@ import type {
   ExerciseCategory,
 } from "@/src/types/database.types";
 import { Ionicons } from "@expo/vector-icons";
+import { memo, useCallback } from "react";
 import { Pressable, Text, View } from "react-native";
 
 interface ExerciseCardProps {
   exercise: Exercise;
-  onPress: () => void;
+  onPress: (exerciseId: string) => void;
 }
 
 const CATEGORY_ICONS: Record<
@@ -26,7 +27,7 @@ const CATEGORY_ICONS: Record<
   distress_tolerance: "shield-outline",
 };
 
-export function ExerciseCard({ exercise, onPress }: ExerciseCardProps) {
+function ExerciseCardComponent({ exercise, onPress }: ExerciseCardProps) {
   const minutes = Math.max(1, Math.round(exercise.duration_seconds / 60));
   const category = (exercise.category ?? "breathing") as ExerciseCategory;
   const evidence = (exercise.evidence_level ?? "emerging") as EvidenceLevel;
@@ -34,9 +35,14 @@ export function ExerciseCard({ exercise, onPress }: ExerciseCardProps) {
   const evidenceLabel = EVIDENCE_LABELS[evidence];
   const iconName = CATEGORY_ICONS[category];
 
+  const handlePress = useCallback(
+    () => onPress(exercise.id),
+    [onPress, exercise.id]
+  );
+
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       className="mb-3 p-4 rounded-2xl bg-river-50 border border-river-100 active:bg-river-100"
     >
       <View className="flex-row items-start gap-3">
@@ -72,3 +78,5 @@ export function ExerciseCard({ exercise, onPress }: ExerciseCardProps) {
     </Pressable>
   );
 }
+
+export const ExerciseCard = memo(ExerciseCardComponent);

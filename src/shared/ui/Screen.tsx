@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
-import { View } from "react-native";
+import { Platform, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+// En web/escritorio limitamos el ancho del contenido y lo centramos para que
+// la app no se estire a todo lo ancho del viewport. En native es transparente.
+const WEB_MAX_WIDTH = 480;
 
 interface ScreenProps {
   children: ReactNode;
@@ -77,7 +81,20 @@ export function Screen({
           />
         </View>
       )}
-      {children}
+      {Platform.OS === "web" ? (
+        <View
+          style={{
+            flex: 1,
+            width: "100%",
+            maxWidth: WEB_MAX_WIDTH,
+            alignSelf: "center",
+          }}
+        >
+          {children}
+        </View>
+      ) : (
+        children
+      )}
     </SafeAreaView>
   );
 }
