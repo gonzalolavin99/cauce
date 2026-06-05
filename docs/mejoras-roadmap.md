@@ -72,32 +72,30 @@ Este documento detalla las oportunidades de mejora identificadas para la aplicac
 
 ### 2.1 Índices Compuestos
 
-- [ ] **Tarea 2.1.1**: Crear índice para mood_logs
+**Estado**: Migración creada en `supabase/migrations/20260605000000_performance_indexes.sql` (idempotente, `IF NOT EXISTS`). Aplicar vía Supabase SQL Editor.
+
+- [x] **Tarea 2.1.1**: Crear índice para mood_logs ✅
   ```sql
-  CREATE INDEX mood_logs_user_recent 
+  CREATE INDEX IF NOT EXISTS mood_logs_user_recent
   ON mood_logs(user_id, created_at DESC);
   ```
-  - Crear migración SQL
-  - Ejecutar en Supabase
-  - Verificar mejora en query performance
+  - ✅ Incluido en la migración
 
-- [ ] **Tarea 2.1.2**: Crear índice para ai_messages
+- [x] **Tarea 2.1.2**: Crear índice para ai_messages ✅
   ```sql
-  CREATE INDEX ai_messages_conversation 
+  CREATE INDEX IF NOT EXISTS ai_messages_conversation
   ON ai_messages(conversation_id, created_at ASC);
   ```
-  - Crear migración SQL
-  - Ejecutar en Supabase
-  - Medir impacto en carga de historial
+  - ✅ Incluido en la migración
 
-- [ ] **Tarea 2.1.3**: Crear índice para consents lookup
+- [x] **Tarea 2.1.3**: Crear índice para consents lookup ✅
   ```sql
-  CREATE INDEX consents_latest 
+  CREATE INDEX IF NOT EXISTS consents_latest
   ON consents(user_id, consent_type, created_at DESC);
   ```
-  - Crear migración SQL
-  - Ejecutar en Supabase
-  - Verificar mejora en verificación de consentimientos
+  - ✅ Incluido en la migración
+
+- [x] **Extra**: Índices para `regulation_sessions(user_id, created_at DESC)` (insights + nudge de inactividad) y `ai_conversations(user_id, created_at DESC)` (listado de conversaciones) ✅
 
 ### 2.2 Optimizar Queries
 
@@ -666,4 +664,4 @@ Este documento detalla las oportunidades de mejora identificadas para la aplicac
 
 ---
 
-**Última actualización**: 2026-06-04 — Completadas tareas 1.1.2–1.1.4 y 1.2.1–1.2.3 (Optimización de Rendimiento). Agregada sección 16 (App Web / PWA).
+**Última actualización**: 2026-06-05 — Sección 16 (PWA) implementada y desplegada en Netlify. Migración de índices de rendimiento creada (sección 2.1) para aplicar en Supabase.

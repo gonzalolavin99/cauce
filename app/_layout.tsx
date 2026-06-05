@@ -5,6 +5,7 @@ import {
     configureForegroundBehavior,
 } from "@/src/features/notifications/service";
 import { InstallPrompt } from "@/src/features/pwa/InstallPrompt";
+import { ErrorBoundary } from "@/src/shared/ui/ErrorBoundary";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
@@ -62,9 +63,10 @@ export default function RootLayout() {
   if (!loaded) return null;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <NotificationController />
+    <ErrorBoundary source="root">
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+          <NotificationController />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="(auth)" />
@@ -104,8 +106,9 @@ export default function RootLayout() {
           />
           <Stack.Screen name="+not-found" />
         </Stack>
-        <InstallPrompt />
-      </ThemeProvider>
-    </QueryClientProvider>
+          <InstallPrompt />
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
