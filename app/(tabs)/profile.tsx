@@ -1,31 +1,31 @@
 import { signOut, useAuth } from "@/src/features/auth/hooks/useAuth";
 import {
-  resolvePrefs,
-  useNotificationPreferences,
-  useUpsertNotificationPreferences,
+    resolvePrefs,
+    useNotificationPreferences,
+    useUpsertNotificationPreferences,
 } from "@/src/features/notifications/hooks/useNotificationPreferences";
 import {
-  cancelAllCauce,
-  ensureAndroidChannel,
-  ensureNotificationPermission,
-  hasNotificationPermission,
-  isNotificationsAvailable,
+    cancelAllCauce,
+    ensureAndroidChannel,
+    ensureNotificationPermission,
+    hasNotificationPermission,
+    isNotificationsAvailable,
 } from "@/src/features/notifications/service";
 import {
-  CALMING_INPUTS,
-  TRIGGERING_INPUTS,
+    CALMING_INPUTS,
+    DIAGNOSIS_OPTIONS,
+    TRIGGERING_INPUTS,
 } from "@/src/features/onboarding/data/options";
-import { DIAGNOSIS_OPTIONS } from "@/src/features/onboarding/data/options";
 import { useDeleteAccount } from "@/src/features/profile/hooks/useDeleteAccount";
 import { useDiagnoses } from "@/src/features/profile/hooks/useDiagnoses";
 import {
-  useSensoryPreferences,
-  useProfile,
+    useProfile,
+    useSensoryPreferences,
 } from "@/src/features/profile/hooks/useProfile";
 import {
-  useUpdateDiagnoses,
-  useUpdatePreferences,
-  useUpdateProfile,
+    useUpdateDiagnoses,
+    useUpdatePreferences,
+    useUpdateProfile,
 } from "@/src/features/profile/hooks/useUpdateProfile";
 import { Avatar, initialsFrom } from "@/src/shared/ui/Avatar";
 import { Button } from "@/src/shared/ui/Button";
@@ -36,7 +36,6 @@ import { ListRow } from "@/src/shared/ui/ListRow";
 import { Screen } from "@/src/shared/ui/Screen";
 import { SectionHeader } from "@/src/shared/ui/SectionHeader";
 import type { Diagnosis, Mobility } from "@/src/types/database.types";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, ScrollView, Switch, Text, View } from "react-native";
@@ -173,7 +172,10 @@ export default function ProfileScreen() {
   }
 
   async function handleToggleDailyCheckin(value: boolean) {
-    if (value) {
+    // Solo pedimos permiso cuando las notificaciones están disponibles
+    // (dev build native). En web / Expo Go el usuario igual puede guardar
+    // la preferencia; los recordatorios simplemente no se programan.
+    if (value && isNotificationsAvailable()) {
       const granted = await ensureNotificationPermission();
       setNotifPermissionGranted(granted);
       if (!granted) {
@@ -201,7 +203,7 @@ export default function ProfileScreen() {
   }
 
   async function handleToggleExerciseReminder(value: boolean) {
-    if (value) {
+    if (value && isNotificationsAvailable()) {
       const granted = await ensureNotificationPermission();
       setNotifPermissionGranted(granted);
       if (!granted) {
@@ -227,7 +229,7 @@ export default function ProfileScreen() {
   }
 
   async function handleTogglePostCrisis(value: boolean) {
-    if (value) {
+    if (value && isNotificationsAvailable()) {
       const granted = await ensureNotificationPermission();
       setNotifPermissionGranted(granted);
       if (!granted) {
