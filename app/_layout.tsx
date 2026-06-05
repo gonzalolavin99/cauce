@@ -67,45 +67,33 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
           <NotificationController />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(onboarding)" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen
-            name="regulate"
-            options={{ presentation: "modal", gestureEnabled: false }}
-          />
-          <Stack.Screen
-            name="mood"
-            options={{ presentation: "modal" }}
-          />
-          <Stack.Screen
-            name="mood-history"
-            options={{ presentation: "modal" }}
-          />
-          <Stack.Screen
-            name="privacy"
-            options={{ presentation: "modal" }}
-          />
-          <Stack.Screen
-            name="my-data"
-            options={{ presentation: "modal" }}
-          />
-          <Stack.Screen
-            name="chat"
-            options={{ presentation: "modal" }}
-          />
-          <Stack.Screen
-            name="crisis-plan"
-            options={{ presentation: "modal" }}
-          />
-          <Stack.Screen
-            name="consent-update"
-            options={{ gestureEnabled: false }}
-          />
-          <Stack.Screen name="+not-found" />
-        </Stack>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(onboarding)" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen
+              name="regulate"
+              options={{ presentation: "modal", gestureEnabled: false }}
+            />
+            <Stack.Screen name="mood" options={{ presentation: "modal" }} />
+            <Stack.Screen
+              name="mood-history"
+              options={{ presentation: "modal" }}
+            />
+            <Stack.Screen name="privacy" options={{ presentation: "modal" }} />
+            <Stack.Screen name="my-data" options={{ presentation: "modal" }} />
+            <Stack.Screen name="chat" options={{ presentation: "modal" }} />
+            <Stack.Screen
+              name="crisis-plan"
+              options={{ presentation: "modal" }}
+            />
+            <Stack.Screen
+              name="consent-update"
+              options={{ gestureEnabled: false }}
+            />
+            <Stack.Screen name="+not-found" />
+          </Stack>
           <InstallPrompt />
         </ThemeProvider>
       </QueryClientProvider>

@@ -174,15 +174,15 @@ Este documento detalla las oportunidades de mejora identificadas para la aplicac
 
 ### 5.1 Error Boundaries
 
-- [ ] **Tarea 5.1.1**: Crear ErrorBoundary component
-  - Implementar clase ErrorBoundary
-  - Agregar UI de fallback amigable
-  - Integrar con Sentry
+- [x] **Tarea 5.1.1**: Crear ErrorBoundary component ✅
+  - ✅ Clase `ErrorBoundary` en `src/shared/ui/ErrorBoundary.tsx` (captura errores de render/lifecycle)
+  - ✅ UI de fallback amigable con `EmptyState` + botón "Reintentar" (resetea el boundary); detalle del error solo en `__DEV__`
+  - ✅ Logger pluggable en `src/shared/lib/logger.ts` (`reportError` / `setErrorReporter`). Hoy escribe a consola; listo para conectar Sentry con `setErrorReporter` (dep `@sentry/react-native` ya instalada, falta DSN/init)
 
-- [ ] **Tarea 5.1.2**: Envolver features con boundaries
-  - Agregar boundary a cada feature principal
-  - Implementar recovery strategies
-  - Agregar logging apropiado
+- [~] **Tarea 5.1.2**: Envolver features con boundaries (parcial)
+  - ✅ Boundary global en el layout raíz (`app/_layout.tsx`, `source="root"`) — evita pantalla en blanco ante cualquier crash de render
+  - Pendiente: boundaries por-feature para aislar fallos (que un crash en chat no tumbe toda la app)
+  - Pendiente: integración real con Sentry (init + DSN) vía `setErrorReporter`
 
 ### 5.2 Retry Logic
 
@@ -664,4 +664,4 @@ Este documento detalla las oportunidades de mejora identificadas para la aplicac
 
 ---
 
-**Última actualización**: 2026-06-05 — Sección 16 (PWA) implementada y desplegada en Netlify. Migración de índices de rendimiento creada (sección 2.1) para aplicar en Supabase.
+**Última actualización**: 2026-06-05 — Sección 16 (PWA) desplegada en Netlify. Índices de rendimiento (2.1) aplicados en Supabase. Error Boundary global + logger pluggable (5.1.1 ✅, 5.1.2 parcial).
