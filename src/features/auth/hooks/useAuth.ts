@@ -1,4 +1,5 @@
 import { clearCachedPlan } from "@/src/features/crisis/lib/offlineCache";
+import { clearPersistedQueryCache } from "@/src/shared/lib/queryPersist";
 import { supabase } from "@/src/shared/lib/supabase";
 import type { Session, User } from "@supabase/supabase-js";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -62,6 +63,9 @@ export async function signOut(): Promise<void> {
   if (userId) {
     await clearCachedPlan(userId);
   }
+  // El cache persistido de React Query contiene datos de salud del usuario:
+  // no debe sobrevivir al cierre de sesión (PWA en computadores compartidos).
+  await clearPersistedQueryCache();
 }
 
 export type { Session, User };

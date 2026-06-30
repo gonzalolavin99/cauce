@@ -10,6 +10,8 @@ export interface SendMessageResult {
   conversation_id: string;
   reply: string;
   flagged_for_crisis: boolean;
+  /** Sugerencias de seguimiento (7.2.1); puede venir vacío. */
+  suggestions?: string[];
 }
 
 /**

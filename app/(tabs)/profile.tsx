@@ -1,3 +1,5 @@
+import { showAlert } from "@/src/shared/ui/alert";
+import { showToast } from "@/src/shared/ui/toast";
 import { signOut, useAuth } from "@/src/features/auth/hooks/useAuth";
 import {
     resolvePrefs,
@@ -16,6 +18,19 @@ import {
     DIAGNOSIS_OPTIONS,
     TRIGGERING_INPUTS,
 } from "@/src/features/onboarding/data/options";
+import {
+    authenticate,
+    isAppLockEnabled,
+    isBiometricAvailable,
+    isScreenPrivacyEnabled,
+    setAppLockEnabled,
+    setScreenPrivacyEnabled,
+} from "@/src/features/privacy/lib/appLock";
+import {
+    getThemeMode,
+    setThemeMode,
+    type ThemeMode,
+} from "@/src/shared/theme/themeMode";
 import { useDeleteAccount } from "@/src/features/profile/hooks/useDeleteAccount";
 import { useDiagnoses } from "@/src/features/profile/hooks/useDiagnoses";
 import {
@@ -27,6 +42,7 @@ import {
     useUpdatePreferences,
     useUpdateProfile,
 } from "@/src/features/profile/hooks/useUpdateProfile";
+import { cn } from "@/src/shared/lib/cn";
 import { Avatar, initialsFrom } from "@/src/shared/ui/Avatar";
 import { Button } from "@/src/shared/ui/Button";
 import { Card } from "@/src/shared/ui/Card";
@@ -35,10 +51,11 @@ import { Input } from "@/src/shared/ui/Input";
 import { ListRow } from "@/src/shared/ui/ListRow";
 import { Screen } from "@/src/shared/ui/Screen";
 import { SectionHeader } from "@/src/shared/ui/SectionHeader";
+import { withErrorBoundary } from "@/src/shared/ui/withErrorBoundary";
 import type { Diagnosis, Mobility } from "@/src/types/database.types";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, ScrollView, Switch, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, Switch, Text, View } from "react-native";
 
 const TIME_OPTIONS: { value: number; label: string }[] = [
   { value: 2, label: "2 min" },
@@ -68,7 +85,7 @@ const INACTIVITY_DAY_PRESETS: { value: number; label: string }[] = [
   { value: 7, label: "1 semana" },
 ];
 
-export default function ProfileScreen() {
+function ProfileScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { data: profile } = useProfile();
@@ -94,6 +111,60 @@ export default function ProfileScreen() {
       alive = false;
     };
   }, []);
+
+  // Apariencia (3.1): preferencia local por dispositivo.
+  const [themeMode, setLocalThemeMode] = useState<ThemeMode>("system");
+  useEffect(() => {
+    let alive = true;
+    getThemeMode().then((m) => {
+      if (alive) setLocalThemeMode(m);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  function handleThemeMode(mode: ThemeMode) {
+    setLocalThemeMode(mode);
+    setThemeMode(mode);
+  }
+
+  // Protección en el dispositivo (1.7): preferencias locales, no van a la BD.
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [appLockOn, setAppLockOn] = useState(false);
+  const [screenPrivacyOn, setScreenPrivacyOn] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    let alive = true;
+    Promise.all([
+      isBiometricAvailable(),
+      isAppLockEnabled(),
+      isScreenPrivacyEnabled(),
+    ]).then(([avail, lock, screen]) => {
+      if (!alive) return;
+      setBiometricAvailable(avail);
+      setAppLockOn(lock);
+      setScreenPrivacyOn(screen);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  async function handleToggleAppLock(value: boolean) {
+    // Pedimos biometría ANTES de cambiar el estado: activa solo quien puede
+    // desbloquear, y desactiva solo quien acredita ser el dueño.
+    const ok = await authenticate();
+    if (!ok) return;
+    await setAppLockEnabled(value);
+    setAppLockOn(value);
+  }
+
+  async function handleToggleScreenPrivacy(value: boolean) {
+    await setScreenPrivacyEnabled(value);
+    setScreenPrivacyOn(value);
+  }
 
   // Estados locales espejados a la BD
   const [displayName, setDisplayName] = useState("");
@@ -133,17 +204,17 @@ export default function ProfileScreen() {
     updateProfile.mutate(
       { display_name: displayName.trim() || null },
       {
-        onSuccess: () => Alert.alert("Guardado", "Tu nombre fue actualizado."),
+        onSuccess: () => showToast("Tu nombre fue actualizado"),
         onError: (err: Error) =>
-          Alert.alert("Error", err.message),
+          showAlert("Error", err.message),
       }
     );
   }
 
   function handleSaveDiagnoses() {
     updateDiagnoses.mutate(localDiagnoses, {
-      onSuccess: () => Alert.alert("Guardado", "Tus diagnósticos fueron actualizados."),
-      onError: (err: Error) => Alert.alert("Error", err.message),
+      onSuccess: () => showToast("Tus diagnósticos fueron actualizados"),
+      onError: (err: Error) => showAlert("Error", err.message),
     });
   }
 
@@ -157,8 +228,8 @@ export default function ProfileScreen() {
       },
       {
         onSuccess: () =>
-          Alert.alert("Guardado", "Tus preferencias fueron actualizadas."),
-        onError: (err: Error) => Alert.alert("Error", err.message),
+          showToast("Tus preferencias fueron actualizadas"),
+        onError: (err: Error) => showAlert("Error", err.message),
       }
     );
   }
@@ -179,7 +250,7 @@ export default function ProfileScreen() {
       const granted = await ensureNotificationPermission();
       setNotifPermissionGranted(granted);
       if (!granted) {
-        Alert.alert(
+        showAlert(
           "Permiso requerido",
           "Para enviarte recordatorios necesitamos permiso de notificaciones. Puedes activarlo desde los ajustes del teléfono."
         );
@@ -190,7 +261,7 @@ export default function ProfileScreen() {
     upsertNotifPrefs.mutate(
       { daily_checkin_enabled: value },
       {
-        onError: (err: Error) => Alert.alert("Error", err.message),
+        onError: (err: Error) => showAlert("Error", err.message),
       }
     );
   }
@@ -198,7 +269,7 @@ export default function ProfileScreen() {
   function handleChangeCheckinHour(hour: number) {
     upsertNotifPrefs.mutate(
       { daily_checkin_hour: hour, daily_checkin_minute: 0 },
-      { onError: (err: Error) => Alert.alert("Error", err.message) }
+      { onError: (err: Error) => showAlert("Error", err.message) }
     );
   }
 
@@ -207,7 +278,7 @@ export default function ProfileScreen() {
       const granted = await ensureNotificationPermission();
       setNotifPermissionGranted(granted);
       if (!granted) {
-        Alert.alert(
+        showAlert(
           "Permiso requerido",
           "Para enviarte recordatorios necesitamos permiso de notificaciones."
         );
@@ -217,14 +288,14 @@ export default function ProfileScreen() {
     }
     upsertNotifPrefs.mutate(
       { exercise_reminder_enabled: value },
-      { onError: (err: Error) => Alert.alert("Error", err.message) }
+      { onError: (err: Error) => showAlert("Error", err.message) }
     );
   }
 
   function handleChangeInactivityDays(days: number) {
     upsertNotifPrefs.mutate(
       { exercise_reminder_days: days },
-      { onError: (err: Error) => Alert.alert("Error", err.message) }
+      { onError: (err: Error) => showAlert("Error", err.message) }
     );
   }
 
@@ -233,7 +304,7 @@ export default function ProfileScreen() {
       const granted = await ensureNotificationPermission();
       setNotifPermissionGranted(granted);
       if (!granted) {
-        Alert.alert(
+        showAlert(
           "Permiso requerido",
           "Para enviarte recordatorios necesitamos permiso de notificaciones."
         );
@@ -243,12 +314,12 @@ export default function ProfileScreen() {
     }
     upsertNotifPrefs.mutate(
       { post_crisis_checkin_enabled: value },
-      { onError: (err: Error) => Alert.alert("Error", err.message) }
+      { onError: (err: Error) => showAlert("Error", err.message) }
     );
   }
 
   function handleSignOut() {
-    Alert.alert("¿Cerrar sesión?", "Tendrás que volver a ingresar.", [
+    showAlert("¿Cerrar sesión?", "Tendrás que volver a ingresar.", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Cerrar sesión",
@@ -263,7 +334,7 @@ export default function ProfileScreen() {
   }
 
   function handleDeleteAccount() {
-    Alert.alert(
+    showAlert(
       "¿Eliminar cuenta?",
       "Esto borra permanentemente tu información: sesiones, preferencias, diagnósticos e historial. No se puede deshacer.",
       [
@@ -273,7 +344,7 @@ export default function ProfileScreen() {
           style: "destructive",
           onPress: () => {
             // Segunda confirmación para prevenir tap accidental
-            Alert.alert(
+            showAlert(
               "Confirmación final",
               "¿Estás seguro/a? Esta acción es irreversible.",
               [
@@ -284,7 +355,7 @@ export default function ProfileScreen() {
                   onPress: () => {
                     deleteAccount.mutate(undefined, {
                       onError: (err: Error) =>
-                        Alert.alert(
+                        showAlert(
                           "Error al eliminar",
                           `${err.message}\n\nPor favor contacta soporte si persiste.`
                         ),
@@ -315,7 +386,7 @@ export default function ProfileScreen() {
             tone="river"
           />
           <View className="flex-1">
-            <Text className="text-xs uppercase text-ink/50 font-semibold tracking-wider mb-1">
+            <Text className="text-xs uppercase text-ink/70 font-semibold tracking-wider mb-1">
               Hola
             </Text>
             <Text
@@ -326,7 +397,7 @@ export default function ProfileScreen() {
               {greeting}
             </Text>
             <Text
-              className="text-xs text-ink/50 mt-0.5"
+              className="text-xs text-ink/70 mt-0.5"
               numberOfLines={1}
               ellipsizeMode="middle"
             >
@@ -357,7 +428,7 @@ export default function ProfileScreen() {
         {/* Sección: Diagnósticos */}
         <View className="mb-10">
           <SectionHeader label="Cómo me identifico" icon="flower-outline" />
-          <Text className="text-sm text-ink/60 mb-4 leading-5">
+          <Text className="text-sm text-ink/70 mb-4 leading-5">
             No necesitas diagnóstico formal para marcar algo.
           </Text>
           <ChipSelector<Diagnosis>
@@ -450,7 +521,7 @@ export default function ProfileScreen() {
         {/* Sección: Recordatorios */}
         <View className="mb-10">
           <SectionHeader label="Recordatorios" icon="notifications-outline" />
-          <Text className="text-sm text-ink/60 mb-4 leading-5">
+          <Text className="text-sm text-ink/70 mb-4 leading-5">
             Notificaciones suaves, sólo en tu teléfono. Todo apagado por
             defecto — eliges qué te hace sentido.
           </Text>
@@ -484,7 +555,7 @@ export default function ProfileScreen() {
 
           {notifPrefs.daily_checkin_enabled && (
             <View className="mt-3 mb-4">
-              <Text className="text-xs text-ink/60 mb-2">Hora</Text>
+              <Text className="text-xs text-ink/70 mb-2">Hora</Text>
               <ChipSelector<string>
                 options={CHECKIN_HOUR_PRESETS.map((o) => ({
                   value: String(o.value),
@@ -508,7 +579,7 @@ export default function ProfileScreen() {
 
           {notifPrefs.exercise_reminder_enabled && (
             <View className="mt-3 mb-4">
-              <Text className="text-xs text-ink/60 mb-2">Después de</Text>
+              <Text className="text-xs text-ink/70 mb-2">Después de</Text>
               <ChipSelector<string>
                 options={INACTIVITY_DAY_PRESETS.map((o) => ({
                   value: String(o.value),
@@ -551,16 +622,77 @@ export default function ProfileScreen() {
           />
         </View>
 
+        {/* Sección: Apariencia (3.1) */}
+        <View className="mb-10">
+          <SectionHeader label="Apariencia" icon="moon-outline" />
+          <View className="flex-row gap-2">
+            {(
+              [
+                { value: "system", label: "Sistema" },
+                { value: "light", label: "Claro" },
+                { value: "dark", label: "Oscuro" },
+              ] as const
+            ).map((opt) => {
+              const active = themeMode === opt.value;
+              return (
+                <Pressable
+                  key={opt.value}
+                  onPress={() => handleThemeMode(opt.value)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={`Tema ${opt.label}`}
+                  className={cn(
+                    "flex-1 py-3 rounded-2xl border items-center",
+                    active
+                      ? "bg-river-500 border-river-500"
+                      : "bg-surface border-river-100"
+                  )}
+                >
+                  <Text
+                    className={cn(
+                      "text-sm font-medium",
+                      active ? "text-white" : "text-ink"
+                    )}
+                  >
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
         {/* Sección: Privacidad y datos */}
         <View className="mb-10">
           <SectionHeader
             label="Privacidad y datos"
             icon="shield-checkmark-outline"
           />
-          <Text className="text-sm text-ink/60 mb-4 leading-5">
+          <Text className="text-sm text-ink/70 mb-4 leading-5">
             Tus datos son tuyos. Puedes ver, exportar o eliminar todo
             cuando quieras.
           </Text>
+
+          {/* Protección en el dispositivo: solo nativo (en web no existe
+              biometría de app ni FLAG_SECURE) */}
+          {Platform.OS !== "web" && (
+            <View className="mb-4">
+              {biometricAvailable && (
+                <ToggleRow
+                  label="Bloqueo con huella o rostro"
+                  description="Pide tu biometría al abrir la app o tras 2 min en segundo plano"
+                  value={appLockOn}
+                  onChange={handleToggleAppLock}
+                />
+              )}
+              <ToggleRow
+                label="Privacidad de pantalla"
+                description="Bloquea capturas de pantalla y oculta la app en recientes (Android)"
+                value={screenPrivacyOn}
+                onChange={handleToggleScreenPrivacy}
+              />
+            </View>
+          )}
 
           <View className="gap-3">
             <ListRow
@@ -627,7 +759,7 @@ function ToggleRow({
     <View className="flex-row items-center justify-between py-3 border-b border-river-100">
       <View className="flex-1 pr-4">
         <Text className="text-base font-medium text-ink">{label}</Text>
-        <Text className="text-xs text-ink/60 mt-0.5">{description}</Text>
+        <Text className="text-xs text-ink/70 mt-0.5">{description}</Text>
       </View>
       <Switch
         value={value}
@@ -638,3 +770,5 @@ function ToggleRow({
     </View>
   );
 }
+
+export default withErrorBoundary(ProfileScreen, { source: "profile" });

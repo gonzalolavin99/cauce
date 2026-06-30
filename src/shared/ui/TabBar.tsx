@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
+import { useColorScheme } from "nativewind";
 import type { ComponentProps } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -41,12 +42,21 @@ const TAB_ICONS: Record<
 export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
+  // Colores por tema (3.1): estos van en style props nativas, no en
+  // className, así que no pueden usar las CSS variables.
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const surface = isDark ? "#1B2128" : "#FFFFFF";
+  const border = isDark ? "#2A3D3E" : "#E7EFEF";
+  const active = isDark ? "#9CC6C7" : "#2F6D6E";
+  const inactive = isDark ? "#7A8C8C" : "#5F7878";
+
   return (
     <View
       style={{
         paddingBottom: Math.max(insets.bottom, 8),
-        backgroundColor: "#FFFFFF",
-        borderTopColor: "#E7EFEF",
+        backgroundColor: surface,
+        borderTopColor: border,
         borderTopWidth: 1,
         // Sombra muy sutil para darle peso de "superficie elevada".
         shadowColor: "#193838",
@@ -104,7 +114,7 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
               <Ionicons
                 name={iconName}
                 size={22}
-                color={isFocused ? "#2F6D6E" : "#9AAAAB"}
+                color={isFocused ? active : inactive}
                 accessibilityElementsHidden
                 importantForAccessibility="no"
               />
@@ -112,7 +122,7 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
                 style={{
                   fontSize: 11,
                   marginTop: 4,
-                  color: isFocused ? "#2F6D6E" : "#9AAAAB",
+                  color: isFocused ? active : inactive,
                   fontWeight: isFocused ? "600" : "500",
                 }}
               >
@@ -128,7 +138,7 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
                   width: 4,
                   height: 4,
                   borderRadius: 2,
-                  backgroundColor: isFocused ? "#2F6D6E" : "transparent",
+                  backgroundColor: isFocused ? active : "transparent",
                 }}
               />
             </Pressable>

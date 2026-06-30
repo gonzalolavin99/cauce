@@ -46,6 +46,52 @@ export interface LlmResponse {
 
 export interface LlmProvider {
   complete(messages: LlmMessage[]): Promise<LlmResponse>;
+  /**
+   * Variante streaming opcional: produce el texto en fragmentos a medida que
+   * el proveedor los emite. Si un proveedor no la implementa, el caller cae
+   * a `complete()` y emite la respuesta completa como un único fragmento.
+   */
+  completeStream?(messages: LlmMessage[]): AsyncGenerator<string>;
+}
+
+/**
+ * Parsea un stream SSE de OpenAI (`data: {json}\n\n`, termina con
+ * `data: [DONE]`) y produce el `delta.content` de cada chunk.
+ */
+async function* parseOpenAIStream(
+  body: ReadableStream<Uint8Array>
+): AsyncGenerator<string> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // Los eventos SSE se separan por doble salto de línea.
+      const events = buffer.split("\n\n");
+      buffer = events.pop() ?? "";
+
+      for (const evt of events) {
+        const line = evt.trim();
+        if (!line.startsWith("data:")) continue;
+        const payload = line.slice(5).trim();
+        if (payload === "[DONE]") return;
+        try {
+          const json = JSON.parse(payload);
+          const delta: string = json?.choices?.[0]?.delta?.content ?? "";
+          if (delta) yield delta;
+        } catch {
+          // Chunk parcial o keep-alive: lo ignoramos.
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
 }
 
 // ----------------------------------------------------------------
@@ -95,6 +141,34 @@ export class OpenAIProvider implements LlmProvider {
           }
         : undefined,
     };
+  }
+
+  async *completeStream(messages: LlmMessage[]): AsyncGenerator<string> {
+    const resp = await fetchWithTimeout(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages,
+          max_tokens: this.maxTokens,
+          temperature: this.temperature,
+          stream: true,
+        }),
+      },
+      LLM_TIMEOUT_MS
+    );
+
+    if (!resp.ok || !resp.body) {
+      const errText = resp.body ? await resp.text() : "(sin cuerpo)";
+      throw new Error(`OpenAI ${resp.status}: ${errText}`);
+    }
+
+    yield* parseOpenAIStream(resp.body);
   }
 }
 

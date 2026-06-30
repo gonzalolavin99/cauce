@@ -1,3 +1,39 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Tema Cauce (mejora 3.1): los colores de tailwind.config.js apuntan a estas
+ * variables (triplets RGB para soportar modificadores de opacidad). El modo
+ * oscuro se activa con la clase `dark` en el root — la maneja
+ * `colorScheme.set()` de nativewind en web y nativo.
+ */
+@layer base {
+  :root {
+    --c-bg: 247 245 242; /* beige muy suave */
+    --c-surface: 255 255 255; /* cards */
+    --c-ink: 26 31 43;
+    --c-river-50: 238 245 245;
+    --c-river-100: 214 231 231;
+    --c-river-300: 143 189 190;
+    --c-river-500: 78 139 140; /* primario — azul verdoso calmo */
+    --c-river-700: 46 95 96;
+    --c-river-900: 25 56 56;
+    --c-sand: 201 168 117; /* acento cálido */
+    --c-alert: 198 85 63; /* crisis, sobrio */
+  }
+
+  .dark:root {
+    --c-bg: 15 17 21;
+    --c-surface: 27 33 40;
+    --c-ink: 232 230 225;
+    --c-river-50: 28 42 43; /* fills sutiles, teñidos de teal */
+    --c-river-100: 42 61 62; /* bordes */
+    --c-river-300: 111 163 164;
+    --c-river-500: 95 163 164; /* primario más claro para contraste */
+    --c-river-700: 156 198 199; /* acentos de texto → claros */
+    --c-river-900: 214 231 231; /* texto profundo → claro */
+    --c-sand: 122 102 72; /* cálido pero oscuro (cards warm) */
+    --c-alert: 217 107 85; /* más claro sobre fondo oscuro */
+  }
+}

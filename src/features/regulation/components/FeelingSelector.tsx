@@ -42,13 +42,15 @@ export function FeelingSelector({ onSelect }: FeelingSelectorProps) {
         <Pressable
           key={f.value}
           onPress={() => onSelect(f.value)}
+          accessibilityRole="button"
+          accessibilityLabel={`${f.label}. ${f.description}`}
           className={cn(
-            "p-5 rounded-2xl border bg-white",
+            "p-5 rounded-2xl border bg-surface",
             "border-river-100 active:bg-river-50 active:border-river-300"
           )}
         >
           <Text className="text-xl font-semibold text-ink">{f.label}</Text>
-          <Text className="text-sm text-ink/60 mt-1">{f.description}</Text>
+          <Text className="text-sm text-ink/70 mt-1">{f.description}</Text>
         </Pressable>
       ))}
     </View>

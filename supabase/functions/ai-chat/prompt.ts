@@ -29,6 +29,8 @@ export interface PromptContext {
   calmingInputs?: string[];
   /** Resumen del plan de crisis del usuario, si lo tiene */
   crisisPlan?: CrisisPlanSummary | null;
+  /** 7.3 RAG: ejercicios de la app relevantes al mensaje (texto ya validado) */
+  relevantContent?: string[];
 }
 
 const BASE_SYSTEM = `Eres "Cauce", un acompañante breve y cálido dentro de una app de bienestar para personas en Chile. NO eres terapeuta, psicólogo ni psiquiatra, y así lo dejas claro si te preguntan qué eres.
@@ -173,6 +175,18 @@ export function buildSystemPrompt(ctx: PromptContext): string {
       `---- Contexto sobre esta persona (úsalo para calibrar tus respuestas; no lo cites textualmente) ----\n\n${ctxLines.join(
         "\n\n"
       )}\n\n---- Fin del contexto ----`
+    );
+  }
+
+  // 7.3 RAG: ejercicios de la app relacionados con el mensaje. Es contenido
+  // ya validado de la app; el asistente puede sugerirlos por su nombre cuando
+  // calce, sin inventar técnicas nuevas.
+  if (ctx.relevantContent && ctx.relevantContent.length > 0) {
+    const items = ctx.relevantContent
+      .map((c) => `  - ${truncate(c, 300)}`)
+      .join("\n");
+    parts.push(
+      `---- Ejercicios de la app que podrían venir al caso (sugiérelos por su nombre solo si encajan con lo que la persona necesita; NO inventes ejercicios fuera de esta lista) ----\n\n${items}\n\n---- Fin de ejercicios ----`
     );
   }
 

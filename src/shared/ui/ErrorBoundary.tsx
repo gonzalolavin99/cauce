@@ -74,8 +74,8 @@ export class ErrorBoundary extends Component<
             action={<Button onPress={this.reset}>Reintentar</Button>}
           />
           {__DEV__ && (
-            <View className="mt-4 p-3 rounded-xl bg-white border border-river-100">
-              <Text className="text-xs text-ink/60 font-semibold mb-1">
+            <View className="mt-4 p-3 rounded-xl bg-surface border border-river-100">
+              <Text className="text-xs text-ink/70 font-semibold mb-1">
                 Detalle (solo en desarrollo)
               </Text>
               <Text className="text-xs text-ink/70">{error.message}</Text>

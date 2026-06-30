@@ -1,30 +1,34 @@
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { useRecommendedExercises } from "@/src/features/exercises/hooks/useRecommendedExercises";
 import {
-  MOOD_EMOJI,
-  MOOD_LABELS,
-  type MoodValue,
+    MOOD_EMOJI,
+    MOOD_LABELS,
+    type MoodValue,
 } from "@/src/features/mood/data/options";
+import { ProactiveNudge } from "@/src/features/mood/components/ProactiveNudge";
+import { StreakCard } from "@/src/features/mood/components/StreakCard";
 import { useMoodLogs } from "@/src/features/mood/hooks/useMoodLogs";
 import { useProfile } from "@/src/features/profile/hooks/useProfile";
+import { REFRESH_TINT, useRefresh } from "@/src/shared/hooks/useRefresh";
 import { useReducedMotion } from "@/src/shared/lib/useReducedMotion";
 import { Card } from "@/src/shared/ui/Card";
 import { EmptyState } from "@/src/shared/ui/EmptyState";
 import { Screen } from "@/src/shared/ui/Screen";
 import { CardSkeleton } from "@/src/shared/ui/Skeleton";
 import { StaggerItem } from "@/src/shared/ui/StaggerItem";
+import { withErrorBoundary } from "@/src/shared/ui/withErrorBoundary";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import Animated, {
-  cancelAnimation,
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
+    cancelAnimation,
+    Easing,
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withTiming,
 } from "react-native-reanimated";
 
 function greeting(): { title: string; emoji: string } {
@@ -64,7 +68,7 @@ function formattedDate(): string {
   return `${DAYS_ES[d.getDay()]} ${d.getDate()} de ${MONTHS_ES[d.getMonth()]}`;
 }
 
-export default function HomeScreen() {
+function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { data: profile } = useProfile();
@@ -72,6 +76,7 @@ export default function HomeScreen() {
   const { data: moodLogs } = useMoodLogs(1);
   const lastMood = moodLogs?.[0];
   const reduceMotion = useReducedMotion();
+  const { refreshing, onRefresh } = useRefresh();
 
   const displayName = useMemo(() => {
     if (profile?.display_name) return profile.display_name;
@@ -141,10 +146,20 @@ export default function HomeScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }}>
+      <ScrollView
+        contentContainerStyle={{ padding: 24, paddingBottom: 48 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={REFRESH_TINT}
+            colors={[REFRESH_TINT]}
+          />
+        }
+      >
         {/* Greeting bloque */}
         <View className="mb-8">
-          <Text className="text-sm text-ink/50 mb-1 capitalize">
+          <Text className="text-sm text-ink/70 mb-1 capitalize">
             {formattedDate()}
           </Text>
           <View className="flex-row items-baseline">
@@ -161,6 +176,8 @@ export default function HomeScreen() {
           <Animated.View style={breathStyle}>
             <Pressable
               onPress={handleRegulatePress}
+              accessibilityRole="button"
+              accessibilityLabel="Necesito regularme. Un ejercicio corto, ahora"
               className="rounded-3xl overflow-hidden bg-river-500 active:bg-river-700"
               style={{
                 minHeight: 220,
@@ -174,15 +191,15 @@ export default function HomeScreen() {
               {/* Halo decorativo — un círculo traslúcido que sugiere agua */}
               <View
                 pointerEvents="none"
-                className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-white/10"
+                className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-surface/10"
               />
               <View
                 pointerEvents="none"
-                className="absolute -bottom-20 -left-10 w-40 h-40 rounded-full bg-white/5"
+                className="absolute -bottom-20 -left-10 w-40 h-40 rounded-full bg-surface/5"
               />
 
               <View className="flex-1 items-center justify-center px-6 py-10">
-                <View className="w-14 h-14 rounded-full bg-white/20 items-center justify-center mb-4">
+                <View className="w-14 h-14 rounded-full bg-surface/20 items-center justify-center mb-4">
                   <Ionicons name="water" size={28} color="white" />
                 </View>
                 <Text className="text-white text-3xl font-bold text-center tracking-tight">
@@ -200,14 +217,14 @@ export default function HomeScreen() {
         <StaggerItem index={1} style={{ marginTop: 24 }}>
           <Card onPress={handleMoodPress} variant="warm" unpadded>
             <View className="flex-row items-center p-4">
-              <View className="w-12 h-12 rounded-2xl bg-white/60 items-center justify-center mr-3">
+              <View className="w-12 h-12 rounded-2xl bg-surface/60 items-center justify-center mr-3">
                 <Text className="text-2xl">{lastMoodInfo?.emoji ?? "📝"}</Text>
               </View>
               <View className="flex-1">
                 <Text className="text-base font-semibold text-ink">
                   {lastMoodInfo ? "¿Cómo estás ahora?" : "¿Cómo estás?"}
                 </Text>
-                <Text className="text-sm text-ink/60 mt-0.5">
+                <Text className="text-sm text-ink/70 mt-0.5">
                   {lastMoodInfo
                     ? `Último: ${lastMoodInfo.label.toLowerCase()}`
                     : "Anota tu estado en segundos"}
@@ -220,6 +237,8 @@ export default function HomeScreen() {
           {lastMoodInfo && (
             <Pressable
               onPress={handleMoodHistoryPress}
+              accessibilityRole="button"
+              accessibilityLabel="Ver mi historial"
               className="mt-2 py-2 active:opacity-60 self-center"
               hitSlop={8}
             >
@@ -229,6 +248,12 @@ export default function HomeScreen() {
             </Pressable>
           )}
         </StaggerItem>
+
+        {/* Sugerencia proactiva si el momento actual suele costar (se oculta sola) */}
+        <ProactiveNudge />
+
+        {/* Racha de check-ins (se oculta sola si no hay racha ≥ 2 días) */}
+        <StreakCard />
 
         {/* Chat con Cauce */}
         <StaggerItem index={2} style={{ marginTop: 12 }}>
@@ -241,7 +266,7 @@ export default function HomeScreen() {
                 <Text className="text-base font-semibold text-ink">
                   Hablar con Cauce
                 </Text>
-                <Text className="text-sm text-ink/60 mt-0.5">
+                <Text className="text-sm text-ink/70 mt-0.5">
                   Conversa con el asistente · IA, no es terapia
                 </Text>
               </View>
@@ -298,7 +323,7 @@ export default function HomeScreen() {
                 unpadded
               >
                 <View className="flex-row items-start p-4">
-                  <View className="w-10 h-10 rounded-xl bg-white items-center justify-center mr-3">
+                  <View className="w-10 h-10 rounded-xl bg-surface items-center justify-center mr-3">
                     <Ionicons name="leaf" size={18} color="#4E8B8C" />
                   </View>
                   <View className="flex-1 pr-3">
@@ -311,8 +336,8 @@ export default function HomeScreen() {
                       </Text>
                     )}
                   </View>
-                  <View className="shrink-0 px-2 py-1 rounded-lg bg-white">
-                    <Text className="text-xs text-ink/60 font-medium">
+                  <View className="shrink-0 px-2 py-1 rounded-lg bg-surface">
+                    <Text className="text-xs text-ink/70 font-medium">
                       ~{Math.round(exercise.duration_seconds / 60)} min
                     </Text>
                   </View>
@@ -325,3 +350,5 @@ export default function HomeScreen() {
     </Screen>
   );
 }
+
+export default withErrorBoundary(HomeScreen, { source: "home" });

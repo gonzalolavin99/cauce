@@ -31,7 +31,7 @@ const SIZE_MAP: Record<Size, { box: number; radius: number; text: number; icon: 
 const TONE_BG: Record<Tone, string> = {
   river: "bg-river-100",
   sand: "bg-sand",
-  white: "bg-white border border-river-100",
+  white: "bg-surface border border-river-100",
   ink: "bg-ink",
 };
 

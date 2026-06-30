@@ -1,4 +1,5 @@
 import { cn } from "@/src/shared/lib/cn";
+import { usePlaceholderColor } from "@/src/shared/theme/usePlaceholderColor";
 import { Text, TextInput, type TextInputProps, View } from "react-native";
 
 interface InputProps extends TextInputProps {
@@ -24,16 +25,18 @@ export function Input({
         : label
       : undefined);
 
+  const placeholderColor = usePlaceholderColor();
+
   return (
     <View className="mb-4">
       {label && (
         <Text className="text-sm font-medium text-ink/80 mb-2">{label}</Text>
       )}
       <TextInput
-        placeholderTextColor="#9ca3af"
+        placeholderTextColor={placeholderColor}
         accessibilityLabel={a11yLabel}
         className={cn(
-          "rounded-2xl px-4 py-4 bg-white border text-ink text-base",
+          "rounded-2xl px-4 py-4 bg-surface border text-ink text-base",
           error ? "border-alert" : "border-river-100",
           className
         )}

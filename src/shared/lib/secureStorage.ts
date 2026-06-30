@@ -1,3 +1,4 @@
+import { reportError } from "@/src/shared/lib/logger";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
@@ -24,6 +25,20 @@ import { Platform } from "react-native";
 
 const CHUNK_SIZE = 1536; // bytes; deja margen sobre el límite de 2KB
 const CHUNK_SUFFIX = "__chunk_count__";
+
+// El fallback a AsyncStorage deja el JWT en storage plano (sin Keychain/
+// Keystore). Reportamos a Sentry UNA vez por arranque para saber cuántos
+// usuarios nativos quedan sin hardening — sin la key ni el valor (1.7).
+let fallbackReported = false;
+function reportSecureStoreFallback(op: string, err: unknown): void {
+  console.warn(`SecureStore ${op} failed, falling back:`, err);
+  if (fallbackReported || Platform.OS === "web") return;
+  fallbackReported = true;
+  reportError(err, {
+    source: "secureStorage.fallback",
+    extra: { op, platform: Platform.OS },
+  });
+}
 
 /** Detecta si SecureStore está disponible (no es web). */
 function isSecureStoreAvailable(): boolean {
@@ -110,7 +125,7 @@ export const secureStorage = {
     try {
       return await getChunked(key);
     } catch (err) {
-      console.warn("SecureStore getItem failed, falling back:", err);
+      reportSecureStoreFallback("getItem", err);
       return AsyncStorage.getItem(key);
     }
   },
@@ -122,7 +137,7 @@ export const secureStorage = {
     try {
       await setChunked(key, value);
     } catch (err) {
-      console.warn("SecureStore setItem failed, falling back:", err);
+      reportSecureStoreFallback("setItem", err);
       await AsyncStorage.setItem(key, value);
     }
   },
@@ -134,7 +149,7 @@ export const secureStorage = {
     try {
       await removeChunked(key);
     } catch (err) {
-      console.warn("SecureStore removeItem failed, falling back:", err);
+      reportSecureStoreFallback("removeItem", err);
       await AsyncStorage.removeItem(key);
     }
   },

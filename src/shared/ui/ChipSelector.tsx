@@ -1,4 +1,5 @@
 import { cn } from "@/src/shared/lib/cn";
+import { usePlaceholderColor } from "@/src/shared/theme/usePlaceholderColor";
 import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 
@@ -32,6 +33,7 @@ export function ChipSelector<T extends string>({
   addPlaceholder = "Otra cosa...",
 }: ChipSelectorProps<T>) {
   const [customInput, setCustomInput] = useState("");
+  const placeholderColor = usePlaceholderColor();
 
   const presetValues = options.map((o) => o.value) as string[];
   const customSelected = selected.filter(
@@ -75,11 +77,16 @@ export function ChipSelector<T extends string>({
             <Pressable
               key={opt.value}
               onPress={() => togglePreset(opt.value)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={
+                opt.hint ? `${opt.label}. ${opt.hint}` : opt.label
+              }
               className={cn(
                 "px-4 py-3 rounded-2xl border",
                 active
                   ? "bg-river-500 border-river-500"
-                  : "bg-white border-river-100"
+                  : "bg-surface border-river-100"
               )}
             >
               <Text
@@ -94,7 +101,7 @@ export function ChipSelector<T extends string>({
                 <Text
                   className={cn(
                     "text-xs mt-0.5",
-                    active ? "text-white/80" : "text-ink/60"
+                    active ? "text-white/80" : "text-ink/70"
                   )}
                 >
                   {opt.hint}
@@ -108,6 +115,8 @@ export function ChipSelector<T extends string>({
           <Pressable
             key={`custom-${value}`}
             onPress={() => removeCustom(value)}
+            accessibilityRole="button"
+            accessibilityLabel={`Quitar ${value}`}
             className="px-4 py-3 rounded-2xl bg-river-500 border border-river-500 flex-row items-center gap-2"
           >
             <Text className="text-sm font-medium text-white">{value}</Text>
@@ -123,15 +132,18 @@ export function ChipSelector<T extends string>({
             onChangeText={setCustomInput}
             onSubmitEditing={addCustom}
             placeholder={addPlaceholder}
-            placeholderTextColor="rgba(0,0,0,0.4)"
+            placeholderTextColor={placeholderColor}
             returnKeyType="done"
             blurOnSubmit={false}
             maxLength={MAX_CUSTOM_CHIP_LENGTH}
-            className="flex-1 px-4 py-3 rounded-2xl border border-river-100 bg-white text-ink"
+            className="flex-1 px-4 py-3 rounded-2xl border border-river-100 bg-surface text-ink"
           />
           <Pressable
             onPress={addCustom}
             disabled={!customInput.trim()}
+            accessibilityRole="button"
+            accessibilityLabel="Agregar"
+            accessibilityState={{ disabled: !customInput.trim() }}
             className={cn(
               "px-4 py-3 rounded-2xl",
               customInput.trim() ? "bg-river-500" : "bg-river-100"
@@ -140,7 +152,7 @@ export function ChipSelector<T extends string>({
             <Text
               className={cn(
                 "text-sm font-medium",
-                customInput.trim() ? "text-white" : "text-ink/50"
+                customInput.trim() ? "text-white" : "text-ink/70"
               )}
             >
               Agregar

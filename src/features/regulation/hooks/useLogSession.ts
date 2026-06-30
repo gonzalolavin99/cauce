@@ -55,6 +55,8 @@ export function useLogSession() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["regulation_sessions"] });
+      // 6.2: refresca la efectividad personal para futuras recomendaciones.
+      queryClient.invalidateQueries({ queryKey: ["exercise-effectiveness"] });
     },
   });
 

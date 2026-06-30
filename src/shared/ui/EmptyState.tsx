@@ -1,3 +1,4 @@
+import { useAccentColor } from "@/src/shared/theme/useAccentColor";
 import { Card } from "@/src/shared/ui/Card";
 import { Ionicons } from "@expo/vector-icons";
 import type { ComponentProps, ReactNode } from "react";
@@ -24,17 +25,18 @@ export function EmptyState({
   action,
   variant = "muted",
 }: EmptyStateProps) {
+  const accent = useAccentColor();
   return (
     <Card variant={variant}>
       <View className="items-center py-4">
-        <View className="h-14 w-14 rounded-2xl bg-white items-center justify-center mb-4 border border-river-100">
-          <Ionicons name={icon} size={26} color="#2F6D6E" />
+        <View className="h-14 w-14 rounded-2xl bg-surface items-center justify-center mb-4 border border-river-100">
+          <Ionicons name={icon} size={26} color={accent} />
         </View>
         <Text className="text-base font-semibold text-ink mb-1 text-center">
           {title}
         </Text>
         {description && (
-          <Text className="text-sm text-ink/60 text-center leading-5 px-2">
+          <Text className="text-sm text-ink/70 text-center leading-5 px-2">
             {description}
           </Text>
         )}

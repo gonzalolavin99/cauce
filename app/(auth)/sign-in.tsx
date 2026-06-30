@@ -65,14 +65,14 @@ export default function SignInScreen() {
             <Text className="text-4xl font-bold text-ink mb-2 tracking-tight">
               Cauce
             </Text>
-            <Text className="text-base text-ink/60 text-center leading-6 max-w-xs">
+            <Text className="text-base text-ink/70 text-center leading-6 max-w-xs">
               Tu espacio para regularte. A tu ritmo, sin juicio.
             </Text>
           </View>
 
           {/* Form card */}
           <View
-            className="p-6 rounded-3xl bg-white border border-river-100"
+            className="p-6 rounded-3xl bg-surface border border-river-100"
             style={{
               shadowColor: "#193838",
               shadowOffset: { width: 0, height: 4 },
@@ -81,7 +81,7 @@ export default function SignInScreen() {
               elevation: 2,
             }}
           >
-            <Text className="text-xs uppercase text-ink/60 font-semibold mb-4 tracking-wider">
+            <Text className="text-xs uppercase text-ink/70 font-semibold mb-4 tracking-wider">
               Iniciar sesión
             </Text>
 

@@ -76,7 +76,7 @@ export default function WelcomeScreen() {
           {PROMISES.map((p) => (
             <View
               key={p.title}
-              className="flex-row items-start gap-4 p-4 rounded-2xl bg-white border border-river-100"
+              className="flex-row items-start gap-4 p-4 rounded-2xl bg-surface border border-river-100"
             >
               <View className="h-11 w-11 rounded-2xl bg-river-50 items-center justify-center">
                 <Ionicons name={p.icon} size={22} color="#2F6D6E" />
@@ -96,7 +96,7 @@ export default function WelcomeScreen() {
         {/* Tiempo estimado */}
         <View className="flex-row items-center justify-center gap-2 mb-8">
           <Ionicons name="time-outline" size={14} color="#6B7280" />
-          <Text className="text-sm text-ink/60">
+          <Text className="text-sm text-ink/70">
             Toma 1-2 minutos · Puedes cambiar todo después
           </Text>
         </View>

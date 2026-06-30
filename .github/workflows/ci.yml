@@ -1,0 +1,63 @@
+# CI de Cauce — typecheck + lint + tests + audit + build de la PWA.
+# Corre en cada push y PR. (Mejora 4.1 de docs/mejoras-pendientes-v2.md)
+#
+# Nota: el build web NO necesita secretos reales — usa placeholders para que
+# el schema de env (src/shared/env.ts) valide. El deploy real sigue siendo
+# local (npm run deploy:web) hasta conectar VERCEL_TOKEN como secret.
+
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  quality:
+    name: Typecheck · Lint · Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint (Biome)
+        run: npm run lint
+
+      - name: Tests (Vitest + coverage threshold 70%)
+        run: npm run test:coverage
+
+      - name: Auditoría de dependencias (solo high/critical)
+        # No bloquea por low/moderate (ruido); sí por high y critical.
+        run: npm audit --audit-level=high
+
+  build-web:
+    name: Build PWA
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Build web (expo export + patch HTML)
+        env:
+          # Placeholders: el bundle de CI no se despliega, solo valida que
+          # el build compile. El deploy real hornea los valores de .env.local.
+          EXPO_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+        run: npm run build:web

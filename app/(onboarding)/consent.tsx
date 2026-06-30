@@ -15,7 +15,7 @@ export default function ConsentScreen() {
           <ProgressDots total={3} current={0} />
           <View className="flex-row items-center gap-1.5">
             <Ionicons name="lock-closed-outline" size={12} color="#6B7280" />
-            <Text className="text-xs text-ink/50">Paso 1 de 3</Text>
+            <Text className="text-xs text-ink/70">Paso 1 de 3</Text>
           </View>
         </View>
 

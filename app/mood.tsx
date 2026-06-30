@@ -1,34 +1,38 @@
+import { showAlert } from "@/src/shared/ui/alert";
+import { showToast } from "@/src/shared/ui/toast";
 import {
-  ENERGY_OPTIONS,
-  MOOD_EMOJI,
-  MOOD_LABELS,
-  MOOD_OPTIONS,
-  type MoodValue,
+    ENERGY_OPTIONS,
+    MOOD_EMOJI,
+    MOOD_LABELS,
+    MOOD_OPTIONS,
+    type MoodValue,
 } from "@/src/features/mood/data/options";
 import {
-  useCreateMoodLog,
-  useMoodLogs,
+    useCreateMoodLog,
+    useMoodLogs,
 } from "@/src/features/mood/hooks/useMoodLogs";
 import { cn } from "@/src/shared/lib/cn";
+import { usePlaceholderColor } from "@/src/shared/theme/usePlaceholderColor";
 import { Button } from "@/src/shared/ui/Button";
 import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
+import { withErrorBoundary } from "@/src/shared/ui/withErrorBoundary";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 
-export default function MoodScreen() {
+function MoodScreen() {
   const router = useRouter();
+  const placeholderColor = usePlaceholderColor();
   const [mood, setMood] = useState<MoodValue | null>(null);
   const [energy, setEnergy] = useState<number>(3);
   const [note, setNote] = useState("");
@@ -58,9 +62,9 @@ export default function MoodScreen() {
           setMood(null);
           setEnergy(3);
           setNote("");
-          Alert.alert("Registrado", "Tu estado quedó anotado.");
+          showToast("Tu estado quedó anotado");
         },
-        onError: (err: Error) => Alert.alert("Error", err.message),
+        onError: (err: Error) => showAlert("Error", err.message),
       }
     );
   }
@@ -81,7 +85,7 @@ export default function MoodScreen() {
         >
 
           {/* Mood grid */}
-          <Text className="text-xs uppercase text-ink/60 font-semibold mb-3 tracking-wider">
+          <Text className="text-xs uppercase text-ink/70 font-semibold mb-3 tracking-wider">
             Estado
           </Text>
           <View className="flex-row flex-wrap gap-2 mb-8">
@@ -91,15 +95,20 @@ export default function MoodScreen() {
                 <Pressable
                   key={opt.value}
                   onPress={() => handleSelectMood(opt.value)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={`Estado: ${opt.label}`}
                   className={cn(
                     "px-4 py-3 rounded-2xl border items-center",
                     active
                       ? "bg-river-500 border-river-500"
-                      : "bg-white border-river-100"
+                      : "bg-surface border-river-100"
                   )}
                   style={{ minWidth: 96 }}
                 >
-                  <Text className="text-2xl mb-1">{opt.emoji}</Text>
+                  <Text className="text-2xl mb-1" accessibilityElementsHidden>
+                    {opt.emoji}
+                  </Text>
                   <Text
                     className={cn(
                       "text-sm font-medium",
@@ -114,7 +123,7 @@ export default function MoodScreen() {
           </View>
 
           {/* Energy */}
-          <Text className="text-xs uppercase text-ink/60 font-semibold mb-3 tracking-wider">
+          <Text className="text-xs uppercase text-ink/70 font-semibold mb-3 tracking-wider">
             Energía
           </Text>
           <View className="flex-row flex-wrap gap-2 mb-8">
@@ -124,11 +133,14 @@ export default function MoodScreen() {
                 <Pressable
                   key={opt.value}
                   onPress={() => handleSelectEnergy(opt.value)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={`Energía: ${opt.label}`}
                   className={cn(
                     "px-4 py-3 rounded-2xl border",
                     active
                       ? "bg-river-500 border-river-500"
-                      : "bg-white border-river-100"
+                      : "bg-surface border-river-100"
                   )}
                 >
                   <Text
@@ -145,18 +157,18 @@ export default function MoodScreen() {
           </View>
 
           {/* Note */}
-          <Text className="text-xs uppercase text-ink/60 font-semibold mb-3 tracking-wider">
+          <Text className="text-xs uppercase text-ink/70 font-semibold mb-3 tracking-wider">
             Nota (opcional)
           </Text>
           <TextInput
             value={note}
             onChangeText={setNote}
             placeholder="Algo que quieras recordar"
-            placeholderTextColor="rgba(0,0,0,0.4)"
+            placeholderTextColor={placeholderColor}
             multiline
             numberOfLines={3}
             maxLength={500}
-            className="px-4 py-3 rounded-2xl border border-river-100 bg-white text-ink mb-8"
+            className="px-4 py-3 rounded-2xl border border-river-100 bg-surface text-ink mb-8"
             style={{ minHeight: 80, textAlignVertical: "top" }}
           />
 
@@ -188,11 +200,11 @@ export default function MoodScreen() {
             </View>
 
             {isLoading && (
-              <Text className="text-ink/60">Cargando...</Text>
+              <Text className="text-ink/70">Cargando...</Text>
             )}
 
             {!isLoading && (!logs || logs.length === 0) && (
-              <Text className="text-ink/60">
+              <Text className="text-ink/70">
                 Todavía no registras tu estado.
               </Text>
             )}
@@ -221,12 +233,12 @@ export default function MoodScreen() {
                         <Text className="text-base font-semibold text-river-900">
                           {label}
                         </Text>
-                        <Text className="text-xs text-ink/50 mt-0.5">
+                        <Text className="text-xs text-ink/70 mt-0.5">
                           Energía: {log.energy ?? "—"}/5
                         </Text>
                       </View>
                     </View>
-                    <Text className="text-xs text-ink/50 shrink-0">
+                    <Text className="text-xs text-ink/70 shrink-0">
                       {date}
                     </Text>
                   </View>
@@ -244,3 +256,5 @@ export default function MoodScreen() {
     </Screen>
   );
 }
+
+export default withErrorBoundary(MoodScreen, { source: "mood" });

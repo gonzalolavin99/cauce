@@ -7,13 +7,16 @@ import { useExercises } from "@/src/features/exercises/hooks/useExercises";
 import { Card } from "@/src/shared/ui/Card";
 import { ChipSelector } from "@/src/shared/ui/ChipSelector";
 import { Screen } from "@/src/shared/ui/Screen";
+import { withErrorBoundary } from "@/src/shared/ui/withErrorBoundary";
 import type { Exercise, ExerciseCategory } from "@/src/types/database.types";
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
+import { REFRESH_TINT, useRefresh } from "@/src/shared/hooks/useRefresh";
+import { CardSkeleton } from "@/src/shared/ui/Skeleton";
 import { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { RefreshControl, Text, View } from "react-native";
 
 type CategoryFilter = "all" | ExerciseCategory;
 type DurationFilter = "any" | "short" | "medium" | "long";
@@ -25,9 +28,10 @@ const DURATION_OPTIONS: { value: DurationFilter; label: string }[] = [
   { value: "long", label: "> 5 min" },
 ];
 
-export default function ExploreScreen() {
+function ExploreScreen() {
   const router = useRouter();
   const { data: exercises, isLoading } = useExercises();
+  const { refreshing, onRefresh } = useRefresh();
 
   const [category, setCategory] = useState<CategoryFilter>("all");
   const [duration, setDuration] = useState<DurationFilter>("any");
@@ -83,7 +87,7 @@ export default function ExploreScreen() {
 
       <View className="flex-row items-center mb-3 gap-2">
         <Ionicons name="layers-outline" size={14} color="#2F6D6E" />
-        <Text className="text-xs uppercase text-ink/60 font-semibold tracking-wider">
+        <Text className="text-xs uppercase text-ink/70 font-semibold tracking-wider">
           Categoría
         </Text>
       </View>
@@ -99,7 +103,7 @@ export default function ExploreScreen() {
       <View className="mt-6">
         <View className="flex-row items-center mb-3 gap-2">
           <Ionicons name="time-outline" size={14} color="#2F6D6E" />
-          <Text className="text-xs uppercase text-ink/60 font-semibold tracking-wider">
+          <Text className="text-xs uppercase text-ink/70 font-semibold tracking-wider">
             Duración
           </Text>
         </View>
@@ -114,7 +118,7 @@ export default function ExploreScreen() {
       </View>
 
       {!isLoading && filtered.length > 0 && (
-        <Text className="text-xs text-ink/50 mb-3 mt-8">
+        <Text className="text-xs text-ink/70 mb-3 mt-8">
           {filtered.length}{" "}
           {filtered.length === 1 ? "ejercicio" : "ejercicios"}
         </Text>
@@ -123,8 +127,10 @@ export default function ExploreScreen() {
   );
 
   const ListEmpty = isLoading ? (
-    <View className="py-10 items-center">
-      <ActivityIndicator />
+    <View className="gap-3">
+      <CardSkeleton />
+      <CardSkeleton />
+      <CardSkeleton />
     </View>
   ) : (
     <Card variant="muted">
@@ -135,7 +141,7 @@ export default function ExploreScreen() {
         <Text className="text-base font-semibold text-ink mb-1">
           Sin resultados
         </Text>
-        <Text className="text-sm text-ink/60 text-center leading-5">
+        <Text className="text-sm text-ink/70 text-center leading-5">
           {hasActiveFilter
             ? "No hay ejercicios con estos filtros. Prueba ampliando la búsqueda."
             : "Aún no hay ejercicios disponibles."}
@@ -153,7 +159,17 @@ export default function ExploreScreen() {
         ListHeaderComponent={ListHeader}
         ListEmptyComponent={ListEmpty}
         contentContainerStyle={{ padding: 24, paddingBottom: 48 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={REFRESH_TINT}
+            colors={[REFRESH_TINT]}
+          />
+        }
       />
     </Screen>
   );
 }
+
+export default withErrorBoundary(ExploreScreen, { source: "explore" });

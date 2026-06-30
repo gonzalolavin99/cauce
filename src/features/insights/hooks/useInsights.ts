@@ -1,4 +1,9 @@
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
+import { computeExerciseStats } from "@/src/features/exercises/engine/stats";
+import {
+  detectTemporalPatterns,
+  type TemporalInsight,
+} from "@/src/features/mood/engine/patterns";
 import { supabase } from "@/src/shared/lib/supabase";
 import type {
   Exercise,
@@ -53,6 +58,12 @@ export interface InsightsData {
   }>;
   /** true si la data tiene suficiente volumen para mostrar algo útil */
   hasData: boolean;
+  /** Patrones temporales detectados (6.1); puede venir vacío. */
+  temporalPatterns: TemporalInsight[];
+  /** Minutos totales dedicados a ejercicios en la ventana (9.2.2). */
+  exerciseMinutes: number;
+  /** Sesiones completadas por categoría (9.2.2). */
+  exercisesByCategory: Array<{ category: string; count: number }>;
 }
 
 function windowStartIso(): string {
@@ -134,6 +145,8 @@ function summarize(
 
   const hasData = moodLogs.length > 0 || completed.length > 0;
 
+  const exStats = computeExerciseStats(sessions, exercises);
+
   return {
     checkinCount: moodLogs.length,
     hoursSinceLastCheckin,
@@ -144,6 +157,9 @@ function summarize(
     helpfulSessions: helpful.length,
     topExercises,
     hasData,
+    temporalPatterns: detectTemporalPatterns(moodLogs),
+    exerciseMinutes: exStats.totalMinutes,
+    exercisesByCategory: exStats.byCategory,
   };
 }
 

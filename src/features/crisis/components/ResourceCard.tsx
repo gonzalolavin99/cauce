@@ -1,8 +1,9 @@
+import { showAlert } from "@/src/shared/ui/alert";
 import type { CrisisResource } from "@/src/features/crisis/data/resources";
 import { cn } from "@/src/shared/lib/cn";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { Alert, Linking, Pressable, Text, View } from "react-native";
+import { Linking, Pressable, Text, View } from "react-native";
 
 interface ResourceCardProps {
   resource: CrisisResource;
@@ -37,7 +38,7 @@ export function ResourceCard({ resource }: ResourceCardProps) {
       if (supported) {
         await Linking.openURL(target);
       } else {
-        Alert.alert(
+        showAlert(
           "No se pudo abrir",
           resource.phone
             ? `Marca manualmente: ${formatPhoneDisplay(resource.phone)}`
@@ -45,21 +46,28 @@ export function ResourceCard({ resource }: ResourceCardProps) {
         );
       }
     } catch {
-      Alert.alert("No se pudo abrir", "Intenta marcar manualmente.");
+      showAlert("No se pudo abrir", "Intenta marcar manualmente.");
     }
   }
 
   const isEmergency = resource.primary;
   const isPhone = !!resource.phone;
 
+  const a11yLabel = isPhone
+    ? `Llamar a ${resource.label}, ${formatPhoneDisplay(resource.phone!)}`
+    : `Abrir ${resource.label}`;
+
   return (
     <Pressable
       onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel={a11yLabel}
+      accessibilityHint={resource.description}
       className={cn(
         "p-5 rounded-2xl border",
         isEmergency
           ? "bg-alert/10 border-alert active:bg-alert/20"
-          : "bg-white border-river-100 active:bg-river-50"
+          : "bg-surface border-river-100 active:bg-river-50"
       )}
     >
       <View className="flex-row justify-between items-start">

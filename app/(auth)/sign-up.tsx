@@ -92,14 +92,14 @@ export default function SignUpScreen() {
             <Text className="text-4xl font-bold text-ink mb-2 tracking-tight">
               Crear cuenta
             </Text>
-            <Text className="text-base text-ink/60 text-center leading-6 max-w-xs">
+            <Text className="text-base text-ink/70 text-center leading-6 max-w-xs">
               Solo necesitamos un correo. Tus datos son tuyos y privados.
             </Text>
           </View>
 
           {/* Form card */}
           <View
-            className="p-6 rounded-3xl bg-white border border-river-100"
+            className="p-6 rounded-3xl bg-surface border border-river-100"
             style={{
               shadowColor: "#193838",
               shadowOffset: { width: 0, height: 4 },
@@ -108,7 +108,7 @@ export default function SignUpScreen() {
               elevation: 2,
             }}
           >
-            <Text className="text-xs uppercase text-ink/60 font-semibold mb-4 tracking-wider">
+            <Text className="text-xs uppercase text-ink/70 font-semibold mb-4 tracking-wider">
               Registro
             </Text>
 
@@ -144,7 +144,7 @@ export default function SignUpScreen() {
               color="#6B7280"
               style={{ marginTop: 2 }}
             />
-            <Text className="flex-1 text-xs text-ink/50 leading-4">
+            <Text className="flex-1 text-xs text-ink/70 leading-4">
               Cifrado en tránsito y en reposo. Cumplimos Ley 19.628 y 21.719
               (Chile). Puedes exportar o eliminar tus datos cuando quieras.
             </Text>

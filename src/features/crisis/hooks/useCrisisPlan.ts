@@ -88,30 +88,40 @@ export interface CrisisPlanInput {
   notes?: string | null;
 }
 
+/** Normaliza el input: strings vacíos → null, para BD y cache consistentes. */
+function normalizeCrisisInput(
+  input: CrisisPlanInput
+): Record<string, string | null> {
+  const out: Record<string, string | null> = {};
+  for (const [k, v] of Object.entries(input)) {
+    if (typeof v === "string") {
+      const trimmed = v.trim();
+      out[k] = trimmed.length === 0 ? null : trimmed;
+    } else {
+      out[k] = v ?? null;
+    }
+  }
+  return out;
+}
+
+interface CrisisPlanMutationContext {
+  previous: Array<[readonly unknown[], CrisisPlanQueryResult | undefined]>;
+}
+
 /**
  * Crea o actualiza el plan de crisis del usuario. Upsert sobre user_id.
- * Tras éxito, el invalidate fuerza un refetch que reescribe el cache local.
+ * Optimistic: el plan se refleja al instante; onSettled refetch reescribe el
+ * cache local desde el server. Ante error, rollback con el snapshot.
  */
 export function useUpsertCrisisPlan() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  return useMutation<void, Error, CrisisPlanInput>({
+  return useMutation<void, Error, CrisisPlanInput, CrisisPlanMutationContext>({
     mutationFn: async (input) => {
       if (!user) throw new Error("No autenticado");
 
-      // Normalizamos strings vacíos a null para mantener la BD limpia.
-      const payload: Record<string, string | null> = {
-        user_id: user.id,
-      };
-      for (const [k, v] of Object.entries(input)) {
-        if (typeof v === "string") {
-          const trimmed = v.trim();
-          payload[k] = trimmed.length === 0 ? null : trimmed;
-        } else {
-          payload[k] = v ?? null;
-        }
-      }
+      const payload = { user_id: user.id, ...normalizeCrisisInput(input) };
 
       const { error } = await (supabase.from("crisis_plans") as any).upsert(
         payload,
@@ -119,8 +129,39 @@ export function useUpsertCrisisPlan() {
       );
       if (error) throw error;
     },
-    onSuccess: () => {
-      // El refetch subsiguiente reescribirá el cache local desde el server.
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: ["crisis-plan"] });
+
+      const previous = queryClient.getQueriesData<CrisisPlanQueryResult>({
+        queryKey: ["crisis-plan"],
+      });
+
+      const normalized = normalizeCrisisInput(input);
+      queryClient.setQueriesData<CrisisPlanQueryResult>(
+        { queryKey: ["crisis-plan"] },
+        (old) => {
+          const prevPlan = old?.plan ?? null;
+          const mergedPlan = {
+            ...(prevPlan ?? { user_id: user?.id ?? null }),
+            ...normalized,
+          } as CrisisPlan;
+          return {
+            plan: mergedPlan,
+            fromCache: false,
+            lastSyncedAt: old?.lastSyncedAt ?? null,
+          };
+        }
+      );
+
+      return { previous };
+    },
+    onError: (_err, _input, context) => {
+      for (const [key, data] of context?.previous ?? []) {
+        queryClient.setQueryData(key, data);
+      }
+    },
+    onSettled: () => {
+      // El refetch reescribirá el cache local desde el server (id/timestamps).
       queryClient.invalidateQueries({ queryKey: ["crisis-plan"] });
     },
   });

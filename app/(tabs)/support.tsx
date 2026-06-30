@@ -1,17 +1,18 @@
 import { ResourceCard } from "@/src/features/crisis/components/ResourceCard";
 import { CRISIS_RESOURCES } from "@/src/features/crisis/data/resources";
 import {
-  isCrisisPlanUseful,
-  useCrisisPlan,
+    isCrisisPlanUseful,
+    useCrisisPlan,
 } from "@/src/features/crisis/hooks/useCrisisPlan";
 import { Card } from "@/src/shared/ui/Card";
 import { Screen } from "@/src/shared/ui/Screen";
+import { withErrorBoundary } from "@/src/shared/ui/withErrorBoundary";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
-export default function SupportScreen() {
+function SupportScreen() {
   const router = useRouter();
   const { data } = useCrisisPlan();
   const plan = data?.plan ?? null;
@@ -58,7 +59,7 @@ export default function SupportScreen() {
             <View
               className={
                 hasPlan
-                  ? "h-11 w-11 rounded-2xl bg-white/20 items-center justify-center"
+                  ? "h-11 w-11 rounded-2xl bg-surface/20 items-center justify-center"
                   : "h-11 w-11 rounded-2xl bg-river-100 items-center justify-center"
               }
             >
@@ -128,7 +129,7 @@ export default function SupportScreen() {
         <View className="mb-8">
           <View className="flex-row items-center mb-3 gap-2">
             <Ionicons name="heart-outline" size={14} color="#2F6D6E" />
-            <Text className="text-xs uppercase text-ink/60 font-semibold tracking-wider">
+            <Text className="text-xs uppercase text-ink/70 font-semibold tracking-wider">
               Apoyo psicológico
             </Text>
           </View>
@@ -166,3 +167,5 @@ export default function SupportScreen() {
     </Screen>
   );
 }
+
+export default withErrorBoundary(SupportScreen, { source: "support" });

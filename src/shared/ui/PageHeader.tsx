@@ -1,3 +1,4 @@
+import { useAccentColor } from "@/src/shared/theme/useAccentColor";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
@@ -33,6 +34,7 @@ export function PageHeader({
   rightAction,
 }: PageHeaderProps) {
   const router = useRouter();
+  const accent = useAccentColor();
 
   const handleBack = () => {
     if (onBack) onBack();
@@ -46,11 +48,11 @@ export function PageHeader({
           <Pressable
             onPress={handleBack}
             hitSlop={12}
-            className="w-10 h-10 rounded-full items-center justify-center bg-white border border-river-100 active:bg-river-50"
+            className="w-10 h-10 rounded-full items-center justify-center bg-surface border border-river-100 active:bg-river-50"
             accessibilityLabel="Volver"
             accessibilityRole="button"
           >
-            <Ionicons name="chevron-back" size={20} color="#2E5F60" />
+            <Ionicons name="chevron-back" size={20} color={accent} />
           </Pressable>
         ) : (
           <View className="w-10 h-10" />
@@ -84,7 +86,7 @@ export function PageHeader({
         {title}
       </Text>
       {subtitle && (
-        <Text className="text-base text-ink/60 mt-2 leading-6">{subtitle}</Text>
+        <Text className="text-base text-ink/70 mt-2 leading-6">{subtitle}</Text>
       )}
     </View>
   );

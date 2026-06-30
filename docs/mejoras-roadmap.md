@@ -4,6 +4,74 @@ Este documento detalla las oportunidades de mejora identificadas para la aplicac
 
 ---
 
+## 🛑 Estado de despliegue (actualizado 2026-06-11)
+
+> ✅ **RESUELTO (2026-06-11, más tarde el mismo día): migramos a Vercel.**
+> Producción ahora vive en **https://cauce-bienestar-pwa.vercel.app** (sin
+> límite de créditos del estilo Netlify; plan Hobby). El deploy del 2026-06-11
+> publicó todo el backlog pendiente (6.1, 9.2.2, 6.1.3, 11.2.2). Flujo nuevo:
+> `npm run deploy:web` (ver CLAUDE.md). El sitio de Netlify queda como legacy.
+> Pendiente del owner: agregar la URL de Vercel en Supabase → Authentication →
+> URL Configuration (redirects de los mails de auth).
+> Ver también el doc nuevo de brechas: `docs/mejoras-pendientes-v2.md`.
+
+### Qué pasó con Netlify (histórico)
+
+El **2026-06-11**, el equipo **agotó los créditos del ciclo de facturación** de
+Netlify. Como consecuencia, Netlify **pausó los deploys de producción**:
+
+- `npx netlify deploy --prod` ahora devuelve `JSONHTTPError: Forbidden`.
+- **El sitio en vivo sigue funcionando** (sirve la última versión publicada).
+- Los **deploys de preview/branch siguen activos**; solo producción está pausada.
+- Netlify agregó **30 créditos de gracia** para mantener el sitio en línea. Si
+  también se agotan, el sitio se suspende hasta restaurar créditos.
+- **El ciclo se resetea el 2026-07-03.** Para reanudar antes: upgrade del plan.
+
+Mientras tanto seguimos desarrollando local: `npm run typecheck`, `npm run test`
+y `npm run build:web` (`expo export`) funcionan sin problema. Lo que NO se puede
+es publicar a producción.
+
+### Qué está alojado / desplegado en Netlify
+
+- **Sitio**: `cauce-bienestar-pwa` · https://cauce-bienestar-pwa.netlify.app
+  (`siteId 92673748-f79b-40d1-829e-05de4b99dad8`).
+- Es **hosting estático**: Netlify solo sirve la carpeta `dist/` ya compilada
+  (build local con `expo export`). No compila nada en Netlify.
+- **Versión en vivo actual**: incluye todo hasta **9.2.1 (heatmap)** —
+  rendimiento, índices DB, optimistic updates, error boundaries + Sentry, chat
+  IA completo (streaming + sugerencias + RAG), PDF y compartir plan de crisis,
+  efectividad de ejercicios, streaks, heatmap, accesibilidad (labels +
+  contraste AA), y el barrido `Alert.alert` → web-safe.
+- El backend del chat NO está en Netlify: son **edge functions de Supabase**
+  (proyecto `cauce-dev`), que sí se desplegaron (`ai-chat`, `embed-exercises`).
+
+### Backlog: hecho y verificado, PERO sin desplegar a producción
+
+Estas tareas están **completas, con typecheck + tests + build OK**, esperando
+que se reactive producción para subirlas todas de una (`npm run deploy:web`):
+
+- **6.1** — Patrones temporales en insights ("Patrones que notamos")
+- **9.2.2** — Estadísticas de ejercicios (minutos totales + por categoría)
+- **6.1.3** — Sugerencia proactiva in-app (`ProactiveNudge` en Inicio)
+- **11.2.2** — Escalado de fuente del sistema (cap global 1.5x)
+
+### Qué queda por hacer (no empezado)
+
+- **4** — Bundle size / lazy loading (el JS pesa ~3.3 MB)
+- **6.2.x** — (ya hecho) · **10** — Modo offline robusto (queue de sync +
+  resolución de conflictos)
+- **11.2.3** — Modo alto contraste (**diferido**: necesita verificación visual,
+  se hará cuando vuelvan los deploys)
+- **13** — Integraciones wearables (HealthKit / Google Fit — solo nativo)
+- **14** — Internacionalización (i18n) — grande
+- **15** — Analytics y telemetría — requiere elegir servicio (Mixpanel/Amplitude)
+- Pendientes operativos del owner: **rotar** el service role key y el token de
+  Netlify (quedaron expuestos en chat), **activar confirmación de email** en
+  Supabase, y **limpiar** usuarios de prueba `*@example.com`. (El RAG ya quedó
+  activado: migración aplicada + 21 embeddings generados.)
+
+---
+
 ## 📊 Índice
 
 1. [Optimización de Rendimiento](#1-optimización-de-rendimiento)
@@ -137,15 +205,14 @@ Este documento detalla las oportunidades de mejora identificadas para la aplicac
 
 ### 3.2 Optimistic Updates
 
-- [ ] **Tarea 3.2.1**: Implementar optimistic update en mood logs
-  - Agregar `onMutate` a `useCreateMoodLog`
-  - Actualizar cache optimísticamente
-  - Manejar rollback en caso de error
+- [x] **Tarea 3.2.1**: Implementar optimistic update en mood logs ✅
+  - ✅ `useCreateMoodLog`: `onMutate` inserta una entrada optimista (id temporal `optimistic-…`) al frente de todas las queries `["mood-logs", …]` (pantalla de hoy + historial)
+  - ✅ Snapshot + rollback en `onError`; `onSettled` invalida para traer el id/created_at real del server
+  - ✅ La entrada aparece al instante; no hay que esperar al round-trip
 
-- [ ] **Tarea 3.2.2**: Implementar optimistic update en crisis plan
-  - Agregar optimistic update a `useUpsertCrisisPlan`
-  - Actualizar cache local inmediatamente
-  - Sincronizar con servidor en background
+- [x] **Tarea 3.2.2**: Implementar optimistic update en crisis plan ✅
+  - ✅ `useUpsertCrisisPlan`: `onMutate` mergea el input normalizado sobre el plan actual dentro de `CrisisPlanQueryResult` (`{plan, fromCache, lastSyncedAt}`)
+  - ✅ Normalización extraída a `normalizeCrisisInput` (reusada por mutationFn y onMutate); rollback con snapshot en `onError`; `onSettled` refetch reescribe el cache local desde el server
 
 ---
 
@@ -179,10 +246,11 @@ Este documento detalla las oportunidades de mejora identificadas para la aplicac
   - ✅ UI de fallback amigable con `EmptyState` + botón "Reintentar" (resetea el boundary); detalle del error solo en `__DEV__`
   - ✅ Logger pluggable en `src/shared/lib/logger.ts` (`reportError` / `setErrorReporter`). Hoy escribe a consola; listo para conectar Sentry con `setErrorReporter` (dep `@sentry/react-native` ya instalada, falta DSN/init)
 
-- [~] **Tarea 5.1.2**: Envolver features con boundaries (parcial)
+- [x] **Tarea 5.1.2**: Envolver features con boundaries ✅
   - ✅ Boundary global en el layout raíz (`app/_layout.tsx`, `source="root"`) — evita pantalla en blanco ante cualquier crash de render
-  - Pendiente: boundaries por-feature para aislar fallos (que un crash en chat no tumbe toda la app)
-  - Pendiente: integración real con Sentry (init + DSN) vía `setErrorReporter`
+  - ✅ HOC `withErrorBoundary()` en `src/shared/ui/withErrorBoundary.tsx` para envolver pantallas/features con su propio boundary aislado
+  - ✅ Boundaries por-feature aplicados a las pantallas: `chat`, `crisis-plan`, `regulate`, `mood`, `mood-history`, `insights`, y las tabs `home`/`explore`/`profile`/`support`. Un crash de render en una feature ya no tumba el resto de la app
+  - ✅ Integración real con Sentry vía `setErrorReporter`: `src/shared/lib/errorReporting.ts` (`initErrorReporting()`) se llama una vez en el layout raíz. Se activa con `EXPO_PUBLIC_SENTRY_DSN` (añadido al schema en `src/shared/env.ts`); sin DSN es no-op y cae a consola. `sendDefaultPii: false` por privacidad (Ley 19.628)
 
 ### 5.2 Retry Logic
 
@@ -202,37 +270,33 @@ Este documento detalla las oportunidades de mejora identificadas para la aplicac
 
 ### 6.1 Detección de Patrones Temporales
 
-- [ ] **Tarea 6.1.1**: Crear función de análisis temporal
-  - Implementar detección de patrones por día de semana
-  - Identificar horas del día problemáticas
-  - Crear algoritmo de detección de tendencias
+- [x] **Tarea 6.1.1**: Función de análisis temporal ✅
+  - ✅ `detectTemporalPatterns` (lógica pura, 6 tests): agrupa por día de semana y franja horaria (madrugada/mañana/tarde/noche), compara contra el promedio general usando `MOOD_SCORE`
+  - ✅ Conservadora: requiere ≥8 registros totales, ≥3 por grupo y desviación ≥0.5 pts para afirmar un patrón (evita falsos positivos)
 
-- [ ] **Tarea 6.1.2**: Integrar en UI de insights
-  - Agregar sección "Patrones detectados"
-  - Visualizar con gráficos simples
-  - Agregar explicaciones en lenguaje natural
+- [x] **Tarea 6.1.2**: Integrar en UI de insights ✅
+  - ✅ Sección "Patrones que notamos" en `/insights` con frases en lenguaje natural ("Los lunes suelen costarte un poco más", "Las mañanas tiendes a estar mejor")
+  - ✅ `temporalPatterns` añadido a `InsightsData`; disclaimer suave ("es una tendencia, no una regla")
 
-- [ ] **Tarea 6.1.3**: Generar sugerencias proactivas
-  - Crear sistema de notificaciones basado en patrones
-  - Sugerir ejercicios antes de momentos difíciles
-  - Implementar opt-in para sugerencias
+- [x] **Tarea 6.1.3**: Sugerencias proactivas (in-app) ✅
+  - ✅ `activeNudge` (lógica pura, 5 tests): si el día/franja actual coincide con un patrón "difícil" de la persona, devuelve ese patrón. Nunca nudgea momentos donde suele estar bien
+  - ✅ `ProactiveNudge` en Inicio: tarjeta suave "{franja} suelen costarte un poco. ¿Te tomas un momento?" → atajo a regulación. Se oculta sola el resto del tiempo
+  - Nota: implementado como sugerencia **in-app** (no notificaciones push). Las notificaciones proactivas quedan como mejora futura (requiere scheduling + opt-in)
 
 ### 6.2 Correlación Ejercicios-Mood
 
-- [ ] **Tarea 6.2.1**: Crear tabla de correlaciones
-  - Diseñar schema para tracking de efectividad
-  - Implementar migración SQL
-  - Agregar RLS policies
+- [x] **Tarea 6.2.1**: Tracking de efectividad (sin tabla nueva) ✅
+  - ✅ Decisión: reutilizar `regulation_sessions.was_helpful` (ya existente) en vez de una tabla de correlaciones nueva — menos esquema, misma señal
+  - ✅ `useExerciseEffectiveness` agrega por `exercise_id`: `{ helped, total }` (helped = was_helpful yes|somewhat)
 
-- [ ] **Tarea 6.2.2**: Implementar tracking post-ejercicio
-  - Agregar prompt "¿Cómo te sientes ahora?" después de ejercicio
-  - Guardar correlación en BD
-  - Calcular efectividad por tipo de ejercicio
+- [x] **Tarea 6.2.2**: Tracking post-ejercicio ✅ (ya existía)
+  - ✅ La pantalla "¿Cómo te sientes ahora?" tras cada ejercicio ya guardaba `was_helpful` en `regulation_sessions` (`useLogSession.completeSession`)
+  - ✅ Ahora `completeSession` invalida `["exercise-effectiveness"]` para refrescar el cálculo
 
-- [ ] **Tarea 6.2.3**: Usar correlaciones en recomendaciones
-  - Modificar `scoreExercise()` para incluir efectividad personal
-  - Priorizar ejercicios que han funcionado antes
-  - Mostrar "Este ejercicio te ha ayudado X veces"
+- [x] **Tarea 6.2.3**: Usar correlaciones en recomendaciones ✅
+  - ✅ `RecommendationContext.effectiveness` + boost en `scoreExercise`: +2 si ayudó 1 vez, +3 si ayudó 2+ veces (pesa fuerte: señal directa de "esto me sirve a mí")
+  - ✅ Cableado en `useRecommendedExercises`; razón "Te ha ayudado X veces" se muestra en la intro del ejercicio
+  - ✅ 3 tests nuevos en `recommend.test.ts` (89 tests en total)
 
 ---
 
@@ -240,15 +304,16 @@ Este documento detalla las oportunidades de mejora identificadas para la aplicac
 
 ### 7.1 Streaming de Respuestas
 
-- [ ] **Tarea 7.1.1**: Implementar streaming en edge function
-  - Modificar provider para soportar streaming
-  - Usar Server-Sent Events (SSE)
-  - Manejar errores de conexión
+- [x] **Tarea 7.1.1**: Implementar streaming en edge function ✅
+  - ✅ `providers.ts`: `OpenAIProvider.completeStream()` consume el SSE de OpenAI (`stream: true`) y produce los `delta.content`
+  - ✅ `index.ts`: rama SSE backward-compatible (flag `stream: true` en el body). Eventos `meta` (conversation_id) → `delta` (fragmentos) → `done` (flagged_for_crisis) | `error`. La ruta JSON sigue intacta para nativo
+  - ✅ Persistencia y re-chequeo de crisis compartidos entre ambas rutas (`persistReply`); si el stream se corta, persiste el texto parcial
+  - ✅ Desplegada: `supabase functions deploy ai-chat`
 
-- [ ] **Tarea 7.1.2**: Actualizar UI para streaming
-  - Mostrar respuesta token por token
-  - Agregar indicador de "escribiendo..."
-  - Implementar cancelación de streaming
+- [x] **Tarea 7.1.2**: Actualizar UI para streaming ✅
+  - ✅ `useStreamMessage.ts`: cliente SSE vía `fetch` + `ReadableStream`. Solo web (`isStreamingSupported`); nativo cae a `useSendMessage`. Salvaguarda: si el stream termina sin evento terminal, reporta error para no colgar la UI
+  - ✅ `chat.tsx`: burbuja del asistente que se llena token a token; "Pensando…" hasta el primer token
+  - ⚠️ Pendiente fino: botón de cancelación en UI (el cliente ya acepta `AbortSignal`, falta cablear el botón)
 
 ### 7.2 Sugerencias de Seguimiento
 
@@ -257,27 +322,31 @@ Este documento detalla las oportunidades de mejora identificadas para la aplicac
   - Basar en contenido de la conversación
   - Mostrar como chips clickeables
 
-- [ ] **Tarea 7.2.2**: Implementar quick replies
-  - Crear UI de respuestas rápidas
-  - Agregar opciones comunes ("Cuéntame más", "¿Qué puedo hacer?")
-  - Personalizar según contexto
+- [x] **Tarea 7.2.2**: Implementar quick replies ✅
+  - ✅ Chips horizontales arriba del input en `chat.tsx`
+  - ✅ Starters cuando no hay conversación ("Me siento ansioso/a", "No puedo dormir", …) y seguimientos tras una respuesta del asistente ("Cuéntame más", "¿Qué puedo hacer?", "Dame un ejercicio", "Gracias")
+  - ✅ Solo en estado idle (no mientras se envía/escribe); al tocar, envía vía `sendText()` (reusa la ruta streaming/nativa)
+  - Nota: 7.2.1 (seguimientos generados por el LLM según contexto) queda pendiente; estos son contextuales pero estáticos
 
 ### 7.3 RAG (Retrieval Augmented Generation)
 
-- [ ] **Tarea 7.3.1**: Crear base de conocimiento psicoeducativa
-  - Recopilar contenido sobre técnicas de regulación
-  - Estructurar en formato embeddings-friendly
-  - Validar con profesionales de salud mental
+> **Decisión de corpus**: el RAG se construye sobre el contenido YA validado de
+> la app (tabla `exercises`), NO sobre contenido clínico nuevo inventado. Así se
+> evita riesgo ético/legal: el asistente recomienda/cita ejercicios reales.
 
-- [ ] **Tarea 7.3.2**: Implementar vector search
-  - Configurar pgvector en Supabase
-  - Generar embeddings de contenido
-  - Crear función de búsqueda semántica
+- [x] **Tarea 7.3.1**: Base de conocimiento = ejercicios existentes ✅
+  - ✅ Corpus = `exercises` (name_es, short_description_es, category, steps). Sin contenido clínico fabricado
+  - ✅ Función `embed-exercises` arma el texto canónico por ejercicio y lo embebe
 
-- [ ] **Tarea 7.3.3**: Integrar RAG en prompts
-  - Buscar contenido relevante antes de generar respuesta
-  - Incluir en system prompt como contexto
-  - Citar fuentes cuando sea apropiado
+- [x] **Tarea 7.3.2**: Implementar vector search ✅
+  - ✅ Migración `20260610210543_rag_exercise_embeddings.sql`: `pgvector`, tabla `exercise_embeddings` (vector 1536), índice HNSW coseno, RLS (lectura autenticada), función `match_exercises(query_embedding, match_count, similarity_threshold)`
+  - ✅ Edge function `embed-exercises` (protegida con service role key) genera embeddings con `text-embedding-3-small`; idempotente (upsert por exercise_id)
+
+- [x] **Tarea 7.3.3**: Integrar RAG en prompts ✅
+  - ✅ `ai-chat/index.ts`: `retrieveRelevantExercises()` embebe el mensaje, llama `match_exercises` (top 3) e inyecta el contexto vía `buildSystemPrompt({ relevantContent })`
+  - ✅ Best-effort: si no hay API key / embeddings / función, devuelve [] y el chat funciona igual
+  - ✅ `prompt.ts`: bloque "Ejercicios de la app que podrían venir al caso" con instrucción de no inventar fuera de la lista
+  - ⚠️ **Activación pendiente** (manual, requiere secretos del owner): (1) aplicar la migración en el SQL Editor; (2) invocar `embed-exercises` con el service role key para poblar los embeddings. Hasta entonces, RAG degrada a no-op
 
 ---
 
@@ -285,37 +354,28 @@ Este documento detalla las oportunidades de mejora identificadas para la aplicac
 
 ### 8.1 Exportación como PDF
 
-- [ ] **Tarea 8.1.1**: Instalar librería de PDF
-  - Evaluar react-native-pdf vs expo-print
-  - Instalar dependencia elegida
-  - Configurar permisos necesarios
+- [x] **Tarea 8.1.1**: Instalar librería de PDF ✅
+  - ✅ `expo-print` (~15.0.8) + `expo-sharing` (~14.0.8) vía `expo install`. Soportan web y nativo
 
-- [ ] **Tarea 8.1.2**: Crear template de PDF
-  - Diseñar layout del plan de crisis
-  - Implementar generación de PDF
-  - Agregar logo y branding
+- [x] **Tarea 8.1.2**: Crear template de PDF ✅
+  - ✅ `src/features/crisis/lib/exportPlanPdf.ts`: HTML imprimible con frase ancla destacada, todas las secciones (mismas etiquetas que la pantalla), contacto de confianza y números de emergencia de Chile (SAMU 131, Salud Responde 600 360 7777, Línea Libre 1515)
+  - ✅ Branding Cauce (color `#2F6D6E`), fecha de generación, escape de HTML del contenido del usuario
 
-- [ ] **Tarea 8.1.3**: Implementar funcionalidad de compartir
-  - Agregar botón "Exportar PDF" en UI
-  - Implementar share sheet nativo
-  - Permitir guardar en archivos del dispositivo
+- [x] **Tarea 8.1.3**: Implementar funcionalidad de compartir ✅
+  - ✅ Botón "Exportar como PDF" en la vista del plan (`crisis-plan.tsx`), con estado "Generando PDF…"
+  - ✅ Nativo: `printToFileAsync` + `Sharing.shareAsync` (share sheet); Web: `printAsync` (diálogo → "Guardar como PDF")
+  - ✅ Disponible también offline (los datos del plan son locales)
 
 ### 8.2 Compartir con Contacto de Confianza
 
-- [ ] **Tarea 8.2.1**: Crear versión simplificada del plan
-  - Diseñar formato "tarjeta de bolsillo"
-  - Incluir solo información esencial
-  - Optimizar para impresión
+- [x] **Tarea 8.2.1**: Versión simplificada del plan ✅
+  - ✅ `sharePlan.ts` → `buildPlanText()`: resumen en texto plano (frase ancla, señales, lo que ayuda, lugar seguro, contacto) + números de emergencia de Chile
 
-- [ ] **Tarea 8.2.2**: Implementar envío por SMS
-  - Integrar con API de SMS nativa
-  - Formatear mensaje apropiadamente
-  - Agregar confirmación antes de enviar
-
-- [ ] **Tarea 8.2.3**: Implementar envío por email
-  - Usar expo-mail-composer
-  - Adjuntar PDF del plan
-  - Pre-llenar asunto y cuerpo del mensaje
+- [x] **Tarea 8.2.2 / 8.2.3**: Compartir por SMS / email ✅
+  - ✅ Botón "Compartir con un contacto" en la vista del plan
+  - ✅ Usa el **share sheet del sistema** (`Share.share`) → cubre SMS, email, WhatsApp, etc. en un solo flujo (nativo y web móvil vía `navigator.share`)
+  - ✅ Fallback en escritorio web: abre el cliente de email con `mailto:` prellenado
+  - Nota: se comparte el resumen en texto (no el PDF adjunto), que es lo más universal y útil para un contacto en un momento de crisis
 
 ---
 
@@ -323,32 +383,29 @@ Este documento detalla las oportunidades de mejora identificadas para la aplicac
 
 ### 9.1 Sistema de Streaks
 
-- [ ] **Tarea 9.1.1**: Crear tabla de streaks
-  - Diseñar schema para tracking de streaks
-  - Implementar migración SQL
-  - Agregar RLS policies
+- [x] **Tarea 9.1.1**: Streaks sin tabla nueva ✅
+  - ✅ Decisión: derivar la racha de `mood_logs` existentes (no se crea tabla). `useStreak` trae hasta 400 fechas y delega en `computeStreak`
 
-- [ ] **Tarea 9.1.2**: Calcular streaks de check-ins
-  - Implementar lógica de cálculo de racha
-  - Manejar días perdidos con gracia
-  - Mostrar en pantalla principal
+- [x] **Tarea 9.1.2**: Calcular streaks de check-ins ✅
+  - ✅ `computeStreak` (lógica pura, 10 tests): racha actual + récord (longest), por día local, deduplicando múltiples check-ins del mismo día
+  - ✅ Días perdidos con gracia: la racha no se rompe si hoy aún no registraste (cuenta hoy O ayer)
+  - ✅ `StreakCard` en la pantalla principal; se invalida `["mood-streak"]` al crear un mood log
 
-- [ ] **Tarea 9.1.3**: Celebrar hitos sin presión
-  - Mostrar mensaje sutil al alcanzar hito
-  - No penalizar por perder racha
-  - Enfocarse en progreso, no perfección
+- [x] **Tarea 9.1.3**: Celebrar hitos sin presión ✅
+  - ✅ Hitos suaves (3/7/14/30/60/100) con mensaje cálido; nota especial al batir el récord
+  - ✅ No penaliza: si la racha actual es 0, la tarjeta no aparece (sin regaños); copy enfocado en "vas a tu ritmo"
 
 ### 9.2 Visualización de Progreso
 
-- [ ] **Tarea 9.2.1**: Crear gráfico de mood mensual
-  - Implementar calendar heatmap
-  - Usar colores sutiles
-  - Agregar tooltips informativos
+- [x] **Tarea 9.2.1**: Gráfico de mood mensual (heatmap) ✅
+  - ✅ `MoodHeatmap`: calendar heatmap estilo GitHub (~3 meses, semanas × días), coloreado por el mood dominante de cada día con la paleta `MOOD_COLOR`
+  - ✅ Lógica pura `buildHeatmap` / `dominantMoodByDay` (7 tests); auto-contenido (ventana propia, independiente del selector de rango)
+  - ✅ "Tooltip": tocar un día muestra fecha + estado arriba; cada celda con `accessibilityLabel`. Insertado en la pantalla de historial; se invalida con cada check-in
 
-- [ ] **Tarea 9.2.2**: Mostrar estadísticas de ejercicios
-  - Contar ejercicios completados por categoría
-  - Mostrar tiempo total dedicado
-  - Visualizar con gráficos simples
+- [x] **Tarea 9.2.2**: Mostrar estadísticas de ejercicios ✅
+  - ✅ `computeExerciseStats` (lógica pura, 5 tests): completadas, minutos totales (por duración del ejercicio) y conteo por categoría
+  - ✅ En `/insights` → tarjeta "Ejercicios" ahora muestra "N min en total" y chips por categoría (respiración, anclaje, etc.)
+  - ⏳ Pendiente de salir a producción (deploys de Netlify pausados por créditos)
 
 ---
 
@@ -394,10 +451,12 @@ Este documento detalla las oportunidades de mejora identificadas para la aplicac
   - Documentar problemas encontrados
   - Priorizar por severidad
 
-- [ ] **Tarea 11.1.2**: Agregar labels apropiados
-  - Agregar `accessibilityLabel` a todos los botones
-  - Agregar `accessibilityHint` donde sea útil
-  - Marcar elementos decorativos como `accessibilityElementsHidden`
+- [x] **Tarea 11.1.2**: Agregar labels apropiados ✅ (componentes de alto tráfico)
+  - ✅ Roles + labels + `accessibilityState` (selected/disabled) en componentes compartidos: `ChipSelector`, `FeelingSelector`, `ExerciseCard`, `Card` (rol button cuando es pulsable), `ResourceCard` (crítico: "Llamar a X, número")
+  - ✅ Selectores de mood y energía (`mood.tsx`) con estado selected y label; emojis decorativos ocultos
+  - ✅ Hero CTA e historial en `index.tsx`; iconos decorativos marcados `accessibilityElementsHidden`
+  - ✅ `TabBar` ya tenía rol `tab` + hint + selected (verificado)
+  - Pendiente: barrido en pantallas menos frecuentes (my-data, onboarding) y `accessibilityHint` donde aporte
 
 - [ ] **Tarea 11.1.3**: Implementar navegación por teclado
   - Asegurar orden de tabulación lógico
@@ -406,20 +465,22 @@ Este documento detalla las oportunidades de mejora identificadas para la aplicac
 
 ### 11.2 Contraste y Tamaños
 
-- [ ] **Tarea 11.2.1**: Auditar contraste de colores
-  - Usar herramienta de análisis de contraste
-  - Asegurar ratio mínimo 4.5:1 para texto
-  - Ajustar colores problemáticos
+- [x] **Tarea 11.2.1**: Auditar contraste de colores ✅
+  - ✅ Texto secundario `text-ink/50` y `text-ink/60` (≈4.36:1, fallaba AA) → `text-ink/70` (≈6.1:1) en toda la app
+  - ✅ Placeholders `rgba(0,0,0,0.4)` (≈2.7:1) → `rgba(0,0,0,0.55)` (≈4.5:1)
+  - ✅ Color inactivo del `TabBar` `#9AAAAB` (≈2.4:1) → `#5F7878` (≈4.7:1)
+  - Se mantiene la jerarquía (texto principal `ink` pleno vs secundario `/70`); `ink = #1A1F2B`
 
-- [ ] **Tarea 11.2.2**: Soportar tamaños de fuente del sistema
-  - Usar unidades escalables (sp en Android, Dynamic Type en iOS)
-  - Probar con tamaños grandes
-  - Ajustar layouts para no romper
+- [x] **Tarea 11.2.2**: Soportar tamaños de fuente del sistema ✅
+  - ✅ Auditado: nada usa `allowFontScaling={false}` → el texto ya escala con la preferencia del sistema
+  - ✅ `configureFontScaling()` (llamado en el layout raíz): fija `maxFontSizeMultiplier: 1.5` global en `Text`/`TextInput` — respeta fuentes grandes sin que tamaños extremos rompan layouts
 
 - [ ] **Tarea 11.2.3**: Implementar modo alto contraste
-  - Crear tema de alto contraste
-  - Detectar preferencia del sistema
-  - Permitir toggle manual
+  - DIFERIDO: el tema de alto contraste toca colores en toda la app y necesita
+    verificación visual. Se hará cuando vuelvan los deploys de producción (para
+    no shippear un cambio global de tema sin poder verlo). La base ya está en AA
+    (4.5:1) tras 11.2.1; alto contraste apuntaría a AAA (7:1)
+  - Detectar preferencia del sistema · permitir toggle manual
 
 ---
 
@@ -427,25 +488,22 @@ Este documento detalla las oportunidades de mejora identificadas para la aplicac
 
 ### 12.1 Tests Unitarios
 
-- [ ] **Tarea 12.1.1**: Configurar coverage reporting
-  - Configurar vitest para generar coverage
-  - Establecer threshold mínimo (ej: 70%)
-  - Integrar en CI/CD
+- [x] **Tarea 12.1.1**: Configurar coverage reporting ✅
+  - ✅ `vitest.config.ts`: provider `v8`, reporters `text` + `html`, `include` acotado a la lógica pura testeada
+  - ✅ Threshold 70% (lines/functions/branches/statements). Actual: **98.6% stmts / 92.4% branches / 100% funcs**
+  - ✅ Script `npm run test:coverage`; `coverage/` añadido a `.gitignore`
+  - Pendiente: integrar en CI/CD (no hay pipeline en el repo todavía)
 
-- [ ] **Tarea 12.1.2**: Tests para motor de recomendación
-  - Testear `scoreExercise()` con diferentes contextos
-  - Testear `recommendExercises()` con edge cases
-  - Alcanzar 90%+ coverage en `recommend.ts`
+- [x] **Tarea 12.1.2**: Tests para motor de recomendación ✅
+  - ✅ `recommend.test.ts` (16 tests): filtro de movilidad, cada regla de score (+5/+2/+1/+2/+1/-2), acumulación, `targets` inválido
+  - ✅ `recommendExercises()`: orden por score, filtrado de excluidos, lista vacía, consistencia con/sin hints
+  - ✅ Coverage `recommend.ts`: 97.8% stmts / 100% funcs
 
-- [ ] **Tarea 12.1.3**: Tests para detección de crisis
-  - Testear `detectCrisis()` con casos positivos
-  - Testear con falsos positivos comunes
-  - Documentar casos límite
+- [x] **Tarea 12.1.3**: Tests para detección de crisis ✅
+  - ✅ `crisis.test.ts` (41 tests) cubre `crisis.ts` al 100% (positivos, falsos positivos, casos límite)
 
-- [ ] **Tarea 12.1.4**: Tests para utilidades
-  - Testear `isCrisisPlanUseful()`
-  - Testear `initials()`
-  - Testear helpers de formato
+- [x] **Tarea 12.1.4**: Tests para utilidades ✅
+  - ✅ `isCrisisPlanUseful.test.ts` (10 tests, 100%) y `initials.test.ts` (11 tests, 100%)
 
 ### 12.2 Tests de Integración
 
@@ -664,4 +722,14 @@ Este documento detalla las oportunidades de mejora identificadas para la aplicac
 
 ---
 
-**Última actualización**: 2026-06-05 — Sección 16 (PWA) desplegada en Netlify. Índices de rendimiento (2.1) aplicados en Supabase. Error Boundary global + logger pluggable (5.1.1 ✅, 5.1.2 parcial).
+**Última actualización**: 2026-06-11 — Ver "🛑 Estado de despliegue" arriba.
+Esta sesión: chat IA completo (streaming 7.1, sugerencias 7.2, RAG 7.3),
+optimistic updates (3.2), PDF + compartir plan de crisis (8.1/8.2), efectividad
+de ejercicios (6.2), streaks + heatmap (9.1/9.2.1), accesibilidad (11.1.2 labels,
+11.2.1 contraste AA, 11.2.2 escalado de fuente), patrones temporales + sugerencia
+proactiva (6.1), estadísticas de ejercicios (9.2.2), y robustez transversal: fix
+del onboarding "pegado", fix del botón Detener, y erradicación de `Alert.alert`
+(roto en web) reemplazado por `showAlert`/`ConfirmDialog` web-safe. **122 tests
+pasando, typecheck limpio.** Backlog 6.1/9.2.2/6.1.3/11.2.2 hecho pero sin
+desplegar (Netlify pausado). Previo (2026-06-10): Error Boundaries (5.1), tests
+unitarios (12.1), PWA (16), índices DB (2.1), Sentry.

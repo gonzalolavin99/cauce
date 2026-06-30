@@ -1,16 +1,22 @@
+import { showAlert } from "@/src/shared/ui/alert";
+import { showToast } from "@/src/shared/ui/toast";
+import { usePlaceholderColor } from "@/src/shared/theme/usePlaceholderColor";
 import {
-  isCrisisPlanUseful,
-  useCrisisPlan,
-  useDeleteCrisisPlan,
-  useUpsertCrisisPlan,
-  type CrisisPlanInput,
+    isCrisisPlanUseful,
+    useCrisisPlan,
+    useDeleteCrisisPlan,
+    useUpsertCrisisPlan,
+    type CrisisPlanInput,
 } from "@/src/features/crisis/hooks/useCrisisPlan";
+import { exportPlanPdf } from "@/src/features/crisis/lib/exportPlanPdf";
+import { sharePlan } from "@/src/features/crisis/lib/sharePlan";
 import { Button } from "@/src/shared/ui/Button";
 import { Input } from "@/src/shared/ui/Input";
 import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
 import { SectionHeader } from "@/src/shared/ui/SectionHeader";
 import { CardSkeleton } from "@/src/shared/ui/Skeleton";
+import { withErrorBoundary } from "@/src/shared/ui/withErrorBoundary";
 import type { CrisisPlan } from "@/src/types/database.types";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -18,22 +24,21 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ComponentProps } from "react";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Linking,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
+    KeyboardAvoidingView,
+    Linking,
+    Platform,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
 type Mode = "view" | "edit";
 
-export default function CrisisPlanScreen() {
+function CrisisPlanScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ mode?: string }>();
   const { data, isLoading } = useCrisisPlan();
@@ -144,15 +149,41 @@ function ViewPlan({
 }) {
   const router = useRouter();
   const deletePlan = useDeleteCrisisPlan();
+  const [isExporting, setIsExporting] = useState(false);
 
   const phone = plan.trusted_contact_phone?.trim();
   const phoneClean = phone?.replace(/\s+/g, "");
+
+  async function handleExport() {
+    if (isExporting) return;
+    setIsExporting(true);
+    Haptics.selectionAsync().catch(() => {});
+    try {
+      await exportPlanPdf(plan);
+    } catch {
+      showAlert(
+        "No se pudo exportar",
+        "Intenta de nuevo en un momento."
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function handleShare() {
+    Haptics.selectionAsync().catch(() => {});
+    try {
+      await sharePlan(plan);
+    } catch {
+      showAlert("No se pudo compartir", "Intenta de nuevo en un momento.");
+    }
+  }
 
   function handleCall() {
     if (!phoneClean) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     Linking.openURL(`tel:${phoneClean}`).catch(() => {
-      Alert.alert(
+      showAlert(
         "No se pudo abrir",
         "Intenta llamar manualmente al número que guardaste."
       );
@@ -165,14 +196,14 @@ function ViewPlan({
   }
 
   function handleOfflineEdit() {
-    Alert.alert(
+    showAlert(
       "Sin conexión",
       "No podemos editar tu plan ahora para no pisar una versión más nueva que pueda haber en tu cuenta. Intenta de nuevo cuando vuelva la señal."
     );
   }
 
   function handleDelete() {
-    Alert.alert(
+    showAlert(
       "¿Borrar el plan?",
       "Vas a perder lo que escribiste. Esta acción no se puede deshacer.",
       [
@@ -183,11 +214,11 @@ function ViewPlan({
           onPress: () => {
             deletePlan.mutate(undefined, {
               onSuccess: () => {
-                Alert.alert("Listo", "El plan se borró.");
+                showToast("El plan se borró");
                 onClose();
               },
               onError: (err: Error) =>
-                Alert.alert("No se pudo borrar", err.message),
+                showAlert("No se pudo borrar", err.message),
             });
           },
         },
@@ -262,7 +293,7 @@ function ViewPlan({
           <Text className="text-river-900 text-base font-semibold text-center">
             Ver números de emergencia
           </Text>
-          <Text className="text-ink/60 text-xs text-center mt-0.5">
+          <Text className="text-ink/70 text-xs text-center mt-0.5">
             SAMU, Salud Responde, Línea Libre
           </Text>
         </Pressable>
@@ -299,8 +330,18 @@ function ViewPlan({
           value={plan.notes}
         />
 
-        {/* Footer: editar / borrar. Deshabilitados en modo offline. */}
+        {/* Footer: compartir / exportar / editar / borrar. */}
         <View className="mt-4 gap-3">
+          <Button variant="secondary" onPress={handleShare}>
+            Compartir con un contacto
+          </Button>
+          <Button
+            variant="secondary"
+            onPress={handleExport}
+            loading={isExporting}
+          >
+            {isExporting ? "Generando PDF…" : "Exportar como PDF"}
+          </Button>
           <Button
             variant="secondary"
             onPress={fromCache ? handleOfflineEdit : onEdit}
@@ -348,7 +389,7 @@ function Section({
 }) {
   if (!value || value.trim().length === 0) return null;
   return (
-    <View className="mb-5 p-4 rounded-2xl bg-white border border-river-100">
+    <View className="mb-5 p-4 rounded-2xl bg-surface border border-river-100">
       <SectionHeader label={title} icon={icon} spacing={8} />
       <Text className="text-base text-ink leading-6">{value.trim()}</Text>
     </View>
@@ -402,10 +443,11 @@ function EditPlan({
         Haptics.notificationAsync(
           Haptics.NotificationFeedbackType.Success
         ).catch(() => {});
+        showToast("Plan guardado");
         onSaved();
       },
       onError: (err: Error) =>
-        Alert.alert("No se pudo guardar", err.message),
+        showAlert("No se pudo guardar", err.message),
     });
   }
 
@@ -587,7 +629,7 @@ function Field({
   return (
     <View className="mb-6">
       <Text className="text-sm font-semibold text-ink mb-1">{label}</Text>
-      {hint && <Text className="text-xs text-ink/60 leading-4 mb-3">{hint}</Text>}
+      {hint && <Text className="text-xs text-ink/70 leading-4 mb-3">{hint}</Text>}
       {enhanced}
     </View>
   );
@@ -606,18 +648,21 @@ function MultilineInput({
   accessibilityLabel?: string;
   accessibilityHint?: string;
 }) {
+  const placeholderColor = usePlaceholderColor();
   return (
     <TextInput
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
-      placeholderTextColor="#9ca3af"
+      placeholderTextColor={placeholderColor}
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
       multiline
       maxLength={2000}
-      className="rounded-2xl px-4 py-3 bg-white border border-river-100 text-ink text-base"
+      className="rounded-2xl px-4 py-3 bg-surface border border-river-100 text-ink text-base"
       style={{ minHeight: 88, maxHeight: 200, textAlignVertical: "top" }}
     />
   );
 }
+
+export default withErrorBoundary(CrisisPlanScreen, { source: "crisis-plan" });

@@ -13,6 +13,11 @@ export interface RecommendationContext {
   calmingInputs: string[];
   timeAvailable: number; // minutos
   mobility: Mobility;
+  /**
+   * Efectividad personal por exercise.id (6.2): cuántas veces le ayudó. Si
+   * está presente, prioriza lo que ya le funcionó a esta persona.
+   */
+  effectiveness?: Record<string, { helped: number; total: number }>;
 }
 
 export interface ScoredExercise {
@@ -126,6 +131,18 @@ export function scoreExercise(
   if (exercise.category && hints.preferredByCalming.has(exercise.category)) {
     score += 1;
     reasons.push("Alineado con lo que te calma");
+  }
+
+  // +2/+3: ya le funcionó a esta persona antes (efectividad personal, 6.2).
+  // Pesa fuerte porque es señal directa de "esto me sirve a mí".
+  const eff = ctx.effectiveness?.[exercise.id];
+  if (eff && eff.helped > 0) {
+    score += eff.helped >= 2 ? 3 : 2;
+    reasons.push(
+      eff.helped === 1
+        ? "Te ayudó una vez"
+        : `Te ha ayudado ${eff.helped} veces`
+    );
   }
 
   // +2 evidencia alta

@@ -11,7 +11,8 @@ import { Screen } from "@/src/shared/ui/Screen";
 import { SectionHeader } from "@/src/shared/ui/SectionHeader";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { useState } from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
 
 export default function PreferencesScreen() {
   const router = useRouter();
@@ -29,8 +30,10 @@ export default function PreferencesScreen() {
   } = useOnboardingStore();
 
   const saveOnboarding = useSaveOnboarding();
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleContinue = () => {
+    setErrorMsg(null);
     saveOnboarding.mutate(
       {
         diagnoses,
@@ -44,10 +47,19 @@ export default function PreferencesScreen() {
       {
         onSuccess: () => {
           reset();
-          router.replace("/(tabs)");
+          // Navegamos a "/" y dejamos que app/index.tsx redirija según el
+          // profile (ya con onboarding_completed=true). Es la redirección
+          // declarativa que ya funciona al abrir la app; evita problemas del
+          // replace imperativo hacia un grupo en web.
+          router.replace("/");
         },
         onError: (error: Error) => {
-          Alert.alert("Error al guardar", error.message);
+          // En web Alert.alert es poco fiable: mostramos el error en pantalla.
+          console.error("onboarding save error", error);
+          setErrorMsg(
+            error.message ||
+              "No pudimos guardar. Revisa tu conexión e intenta de nuevo."
+          );
         },
       }
     );
@@ -66,7 +78,7 @@ export default function PreferencesScreen() {
             <Text className="text-sm text-river-700 font-medium">Atrás</Text>
           </Pressable>
           <ProgressDots total={3} current={2} />
-          <Text className="text-xs text-ink/50">Paso 3 de 3</Text>
+          <Text className="text-xs text-ink/70">Paso 3 de 3</Text>
         </View>
 
         <Text className="text-3xl font-bold text-ink mb-3 tracking-tight">
@@ -98,6 +110,12 @@ export default function PreferencesScreen() {
           />
         </View>
 
+        {errorMsg && (
+          <View className="mb-3 p-3 rounded-2xl bg-alert/10 border border-alert/30">
+            <Text className="text-sm text-alert text-center">{errorMsg}</Text>
+          </View>
+        )}
+
         <Button
           onPress={handleContinue}
           loading={saveOnboarding.isPending}
@@ -105,7 +123,7 @@ export default function PreferencesScreen() {
         >
           Terminar
         </Button>
-        <Text className="text-xs text-ink/50 text-center mt-3">
+        <Text className="text-xs text-ink/70 text-center mt-3">
           Puedes saltarte esto dejándolo vacío
         </Text>
       </ScrollView>

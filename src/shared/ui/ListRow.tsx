@@ -61,7 +61,7 @@ export function ListRow({
           <Text
             className={cn(
               "text-xs mt-0.5 leading-4",
-              isDestructive ? "text-alert/70" : "text-ink/60"
+              isDestructive ? "text-alert/70" : "text-ink/70"
             )}
           >
             {subtitle}
@@ -83,7 +83,7 @@ export function ListRow({
     "p-4 rounded-2xl border",
     isDestructive
       ? "bg-alert/5 border-alert/20"
-      : "bg-white border-river-100",
+      : "bg-surface border-river-100",
     !isDestructive && onPress && "active:bg-river-50",
     isDestructive && onPress && "active:bg-alert/10",
     disabled && "opacity-40"

@@ -10,19 +10,20 @@ import { useReducedMotion } from "@/src/shared/lib/useReducedMotion";
 import { Avatar } from "@/src/shared/ui/Avatar";
 import { Button } from "@/src/shared/ui/Button";
 import { Screen } from "@/src/shared/ui/Screen";
+import { withErrorBoundary } from "@/src/shared/ui/withErrorBoundary";
 import type { ExerciseCategory, Feeling } from "@/src/types/database.types";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ComponentProps } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import Animated, {
-  Easing,
-  cancelAnimation,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
+    Easing,
+    cancelAnimation,
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withTiming,
 } from "react-native-reanimated";
 
 type Phase = "feeling" | "intro" | "active" | "done";
@@ -38,7 +39,7 @@ const CATEGORY_ICONS: Record<
   distress_tolerance: "shield",
 };
 
-export default function RegulateScreen() {
+function RegulateScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ exerciseId?: string }>();
   const hasPreselectedExercise = !!params.exerciseId;
@@ -98,24 +99,17 @@ export default function RegulateScreen() {
     router.back();
   }
 
+  // La confirmación ("¿Salir?") la maneja el runner (diálogo propio, pausa el
+  // ejercicio mientras se decide). Al confirmar salir, registramos la sesión
+  // como saltada y volvemos a la pregunta "¿Cómo te sientes?" (fase feeling),
+  // no afuera de la pantalla.
   function handleCancel() {
-    Alert.alert(
-      "¿Detener el ejercicio?",
-      "Podemos intentarlo de nuevo cuando quieras.",
-      [
-        { text: "Seguir", style: "cancel" },
-        {
-          text: "Detener",
-          style: "destructive",
-          onPress: () => {
-            if (sessionId) {
-              completeSession.mutate({ id: sessionId, was_helpful: "skipped" });
-            }
-            router.back();
-          },
-        },
-      ]
-    );
+    if (sessionId) {
+      completeSession.mutate({ id: sessionId, was_helpful: "skipped" });
+    }
+    setSessionId(null);
+    setFeeling(undefined);
+    setPhase("feeling");
   }
 
   // --- Loading ---
@@ -186,7 +180,7 @@ export default function RegulateScreen() {
               </Text>
             </View>
 
-            <Text className="text-sm text-ink/60 uppercase tracking-wider mb-2 font-medium">
+            <Text className="text-sm text-ink/70 uppercase tracking-wider mb-2 font-medium">
               Ejercicio sugerido
             </Text>
             <Text className="text-4xl font-bold text-ink mb-4 tracking-tight">
@@ -214,7 +208,7 @@ export default function RegulateScreen() {
 
             <View className="flex-row items-center gap-2">
               <Ionicons name="time-outline" size={14} color="#6B7280" />
-              <Text className="text-sm text-ink/60">
+              <Text className="text-sm text-ink/70">
                 Duración aproximada: ~{minutes} min
               </Text>
             </View>
@@ -385,3 +379,5 @@ function DoneWave() {
     </View>
   );
 }
+
+export default withErrorBoundary(RegulateScreen, { source: "regulate" });

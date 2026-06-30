@@ -1,0 +1,26 @@
+# Actualizaciones automáticas de dependencias (Seguridad 1.9,
+# docs/mejoras-pendientes-v2.md). PRs semanales, agrupadas para no inundar.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-y-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      # El SDK de Expo fija las versiones de react/react-native/expo-*;
+      # subirlas sueltas rompe la compatibilidad. Se actualizan en bloque
+      # con `npx expo install --fix` al subir de SDK.
+      - dependency-name: "expo*"
+      - dependency-name: "react-native*"
+      - dependency-name: "react"
+      - dependency-name: "react-dom"
+      - dependency-name: "@expo/*"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly

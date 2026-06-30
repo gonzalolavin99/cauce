@@ -27,7 +27,7 @@ export default function DiagnosisScreen() {
             <Text className="text-sm text-river-700 font-medium">Atrás</Text>
           </Pressable>
           <ProgressDots total={3} current={1} />
-          <Text className="text-xs text-ink/50">Paso 2 de 3</Text>
+          <Text className="text-xs text-ink/70">Paso 2 de 3</Text>
         </View>
 
         <Text className="text-3xl font-bold text-ink mb-3 tracking-tight">
@@ -36,7 +36,7 @@ export default function DiagnosisScreen() {
         <Text className="text-ink/70 mb-2 leading-6">
           Elige todo lo que aplique. No necesitas diagnóstico formal.
         </Text>
-        <Text className="text-sm text-ink/50 mb-8 leading-5">
+        <Text className="text-sm text-ink/70 mb-8 leading-5">
           Esto nos ayuda a sugerirte ejercicios que podrían servirte. Puedes
           cambiarlo cuando quieras.
         </Text>
@@ -55,7 +55,7 @@ export default function DiagnosisScreen() {
             Continuar
           </Button>
           {isEmpty && (
-            <Text className="text-xs text-ink/50 text-center mt-3">
+            <Text className="text-xs text-ink/70 text-center mt-3">
               Selecciona al menos una opción para continuar
             </Text>
           )}

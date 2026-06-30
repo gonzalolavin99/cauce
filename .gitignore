@@ -36,9 +36,21 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# test coverage
+coverage/
+
 # generated native folders
 /ios
 /android
 
-# Local Netlify folder
+# Local Netlify folder (legacy, ya migrado a Vercel)
 .netlify
+
+# Local Vercel folder (link del proyecto + build output)
+.vercel
+
+# Claude Code local (permisos por máquina; launch.json sí se versiona)
+.claude/settings.local.json
+
+# Supabase CLI temp/cache (refs y versiones locales, no van al repo)
+supabase/.temp/

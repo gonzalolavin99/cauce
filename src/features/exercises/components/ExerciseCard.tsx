@@ -43,10 +43,17 @@ function ExerciseCardComponent({ exercise, onPress }: ExerciseCardProps) {
   return (
     <Pressable
       onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel={`${exercise.name_es}. ${categoryLabel}, ~${minutes} minutos`}
+      accessibilityHint="Abre el ejercicio"
       className="mb-3 p-4 rounded-2xl bg-river-50 border border-river-100 active:bg-river-100"
     >
       <View className="flex-row items-start gap-3">
-        <View className="h-10 w-10 rounded-2xl bg-white items-center justify-center border border-river-100">
+        <View
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          className="h-10 w-10 rounded-2xl bg-surface items-center justify-center border border-river-100"
+        >
           <Ionicons name={iconName} size={18} color="#2F6D6E" />
         </View>
         <View className="flex-1">
@@ -54,7 +61,7 @@ function ExerciseCardComponent({ exercise, onPress }: ExerciseCardProps) {
             <Text className="flex-1 pr-3 text-base font-semibold text-river-900">
               {exercise.name_es}
             </Text>
-            <Text className="text-xs text-ink/50 shrink-0">~{minutes} min</Text>
+            <Text className="text-xs text-ink/70 shrink-0">~{minutes} min</Text>
           </View>
           {exercise.short_description_es && (
             <Text className="text-sm text-ink/70 leading-5">

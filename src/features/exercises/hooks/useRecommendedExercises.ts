@@ -2,6 +2,7 @@ import {
   type ScoredExercise,
   recommendExercises,
 } from "@/src/features/exercises/engine/recommend";
+import { useExerciseEffectiveness } from "@/src/features/exercises/hooks/useExerciseEffectiveness";
 import { useExercises } from "@/src/features/exercises/hooks/useExercises";
 import { useDiagnoses } from "@/src/features/profile/hooks/useDiagnoses";
 import { useSensoryPreferences } from "@/src/features/profile/hooks/useProfile";
@@ -15,6 +16,7 @@ export function useRecommendedExercises(feeling?: Feeling): {
   const { data: exercises, isLoading: exLoading } = useExercises();
   const { data: prefs, isLoading: prefsLoading } = useSensoryPreferences();
   const { data: diagnoses, isLoading: diagLoading } = useDiagnoses();
+  const { data: effectiveness } = useExerciseEffectiveness();
 
   const ranked = useMemo(() => {
     if (!exercises || exercises.length === 0) return [];
@@ -29,8 +31,9 @@ export function useRecommendedExercises(feeling?: Feeling): {
       calmingInputs,
       timeAvailable: prefs?.default_time_available ?? 5,
       mobility: (prefs?.default_mobility as Mobility) ?? "any",
+      effectiveness: effectiveness ?? undefined,
     });
-  }, [exercises, prefs, diagnoses, feeling]);
+  }, [exercises, prefs, diagnoses, feeling, effectiveness]);
 
   return {
     ranked,

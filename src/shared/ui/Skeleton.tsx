@@ -64,7 +64,7 @@ export function Skeleton({
 /** Skeleton con el shape de una Card típica (icon + 2 líneas de texto). */
 export function CardSkeleton() {
   return (
-    <View className="p-5 rounded-3xl bg-white border border-river-100 flex-row items-start gap-3">
+    <View className="p-5 rounded-3xl bg-surface border border-river-100 flex-row items-start gap-3">
       <Skeleton width={40} height={40} radius={14} />
       <View className="flex-1 gap-2">
         <Skeleton width="60%" height={14} />

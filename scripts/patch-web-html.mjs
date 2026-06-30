@@ -27,6 +27,17 @@ const SW_SCRIPT = `
           navigator.serviceWorker.register('/sw.js').catch(function () {});
         });
       }
+      // iOS Safari hace auto-zoom al enfocar inputs con fuente < 16px, lo que
+      // descoloca la vista del chat. maximum-scale=1 desactiva SOLO ese zoom
+      // automático: desde iOS 10 Safari lo ignora para el pinch manual del
+      // usuario, así que la accesibilidad no se pierde. No se aplica en
+      // Android, donde sí bloquearía el pinch.
+      (function () {
+        if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+          var vp = document.querySelector('meta[name="viewport"]');
+          if (vp) vp.setAttribute('content', vp.getAttribute('content') + ', maximum-scale=1');
+        }
+      })();
     </script>`;
 
 async function main() {

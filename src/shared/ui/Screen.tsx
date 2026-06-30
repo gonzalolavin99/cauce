@@ -1,3 +1,4 @@
+import { useColorScheme } from "nativewind";
 import type { ReactNode } from "react";
 import { Platform, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -35,6 +36,13 @@ export function Screen({
     ? (["top", "bottom"] as const)
     : (["top"] as const);
 
+  // Halos decorativos por tema: en oscuro, versiones profundas y aún más
+  // sutiles de los mismos tonos (cálido + river).
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const warmHalo = isDark ? "#3A3226" : "#F0DDC8";
+  const riverHalo = isDark ? "#1C2E2F" : "#D0E7E8";
+
   return (
     <SafeAreaView className="flex-1 bg-bg" edges={edges}>
       {ambient && (
@@ -62,7 +70,7 @@ export function Screen({
               width: 260,
               height: 260,
               borderRadius: 130,
-              backgroundColor: "#F0DDC8",
+              backgroundColor: warmHalo,
               opacity: 0.32,
             }}
           />
@@ -75,7 +83,7 @@ export function Screen({
               width: 300,
               height: 300,
               borderRadius: 150,
-              backgroundColor: "#D0E7E8",
+              backgroundColor: riverHalo,
               opacity: 0.45,
             }}
           />

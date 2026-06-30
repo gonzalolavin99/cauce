@@ -17,7 +17,7 @@ interface SectionHeaderProps {
 
 /**
  * Header de sección unificado. Reemplaza los Text eyebrow que están duplicados
- * en todas las pantallas (`text-xs uppercase text-ink/60 font-semibold
+ * en todas las pantallas (`text-xs uppercase text-ink/70 font-semibold
  * tracking-wider`). Usarlo siempre que haya un agrupamiento de contenido.
  */
 export function SectionHeader({
@@ -45,7 +45,7 @@ export function SectionHeader({
         )}
         <Text
           accessibilityRole="header"
-          className="text-xs uppercase text-ink/60 font-semibold tracking-wider"
+          className="text-xs uppercase text-ink/70 font-semibold tracking-wider"
         >
           {label}
         </Text>

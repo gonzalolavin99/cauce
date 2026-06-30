@@ -1,20 +1,21 @@
 import {
-  MOOD_EMOJI,
-  MOOD_LABELS,
-  type MoodValue,
+    MOOD_EMOJI,
+    MOOD_LABELS,
+    type MoodValue,
 } from "@/src/features/mood/data/options";
 import {
-  averageScore,
-  bucketByDay,
-  computeStreak,
-  humanDate,
-  MOOD_COLOR,
-  MOOD_ORDER,
-  moodFrequency,
-  toLocalDateKey,
-  weekdayShort,
-  type DayBucket,
+    averageScore,
+    bucketByDay,
+    computeStreak,
+    humanDate,
+    MOOD_COLOR,
+    MOOD_ORDER,
+    moodFrequency,
+    toLocalDateKey,
+    weekdayShort,
+    type DayBucket,
 } from "@/src/features/mood/engine/insights";
+import { MoodHeatmap } from "@/src/features/mood/components/MoodHeatmap";
 import { useMoodLogs } from "@/src/features/mood/hooks/useMoodLogs";
 import { cn } from "@/src/shared/lib/cn";
 import { Button } from "@/src/shared/ui/Button";
@@ -22,12 +23,14 @@ import { EmptyState } from "@/src/shared/ui/EmptyState";
 import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
 import { CardSkeleton, Skeleton } from "@/src/shared/ui/Skeleton";
+import { withErrorBoundary } from "@/src/shared/ui/withErrorBoundary";
 import type { MoodLog } from "@/src/types/database.types";
 import { FlashList } from "@shopify/flash-list";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { memo, useCallback, useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { REFRESH_TINT, useRefresh } from "@/src/shared/hooks/useRefresh";
+import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 
 type MoodListRow =
   | { kind: "day"; key: string; dateKey: string }
@@ -37,10 +40,11 @@ type TimeRange = 7 | 30;
 
 const CHART_HEIGHT = 120;
 
-export default function MoodHistoryScreen() {
+function MoodHistoryScreen() {
   const router = useRouter();
   const [range, setRange] = useState<TimeRange>(7);
   const { data: logs, isLoading } = useMoodLogs(200);
+  const { refreshing, onRefresh } = useRefresh();
 
   const buckets = useMemo<DayBucket[]>(
     () => bucketByDay(logs ?? [], range),
@@ -78,7 +82,7 @@ export default function MoodHistoryScreen() {
     ({ item }: { item: MoodListRow }) => {
       if (item.kind === "day") {
         return (
-          <Text className="text-xs uppercase text-ink/50 font-semibold mb-2 mt-3 tracking-wider">
+          <Text className="text-xs uppercase text-ink/70 font-semibold mb-2 mt-3 tracking-wider">
             {humanDate(item.dateKey)}
           </Text>
         );
@@ -174,8 +178,8 @@ export default function MoodHistoryScreen() {
 
       {/* Bar chart */}
       {hasData && (
-        <View className="mb-8 p-4 rounded-3xl bg-white border border-river-100">
-          <Text className="text-xs uppercase text-ink/60 font-semibold mb-4 tracking-wider">
+        <View className="mb-8 p-4 rounded-3xl bg-surface border border-river-100">
+          <Text className="text-xs uppercase text-ink/70 font-semibold mb-4 tracking-wider">
             {range === 7 ? "Últimos 7 días" : "Últimos 30 días"}
           </Text>
 
@@ -188,10 +192,13 @@ export default function MoodHistoryScreen() {
         </View>
       )}
 
+      {/* Heatmap de calendario (9.2.1) — usa su propia ventana de ~3 meses */}
+      {hasData && <MoodHeatmap />}
+
       {/* Distribución */}
       {hasData && (
-        <View className="mb-8 p-4 rounded-3xl bg-white border border-river-100">
-          <Text className="text-xs uppercase text-ink/60 font-semibold mb-4 tracking-wider">
+        <View className="mb-8 p-4 rounded-3xl bg-surface border border-river-100">
+          <Text className="text-xs uppercase text-ink/70 font-semibold mb-4 tracking-wider">
             Distribución
           </Text>
           <MoodDistribution freq={freq} total={totalEntries} />
@@ -236,6 +243,14 @@ export default function MoodHistoryScreen() {
         ListHeaderComponent={ListHeader}
         ListFooterComponent={ListFooter}
         contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={REFRESH_TINT}
+            colors={[REFRESH_TINT]}
+          />
+        }
       />
     </Screen>
   );
@@ -261,7 +276,7 @@ function RangeChip({
         "px-4 py-2 rounded-xl border",
         active
           ? "bg-river-500 border-river-500"
-          : "bg-white border-river-100"
+          : "bg-surface border-river-100"
       )}
     >
       <Text
@@ -290,11 +305,11 @@ function StatCard({
       className="p-4 rounded-2xl bg-sand border border-river-100"
       style={{ minWidth: 100, flexGrow: 1, flexBasis: 100 }}
     >
-      <Text className="text-xs uppercase text-ink/50 font-semibold tracking-wider">
+      <Text className="text-xs uppercase text-ink/70 font-semibold tracking-wider">
         {label}
       </Text>
       <Text className="text-xl font-bold text-ink mt-1">{value}</Text>
-      <Text className="text-xs text-ink/50 mt-0.5">{hint}</Text>
+      <Text className="text-xs text-ink/70 mt-0.5">{hint}</Text>
     </View>
   );
 }
@@ -376,7 +391,7 @@ const DayBarChart = memo(function DayBarChart({
               style={{ flex: 1, alignItems: "center" }}
             >
               {show ? (
-                <Text className="text-[10px] text-ink/50">
+                <Text className="text-[10px] text-ink/70">
                   {showEveryLabel ? weekdayShort(b.dateKey) : shortDate(b.dateKey)}
                 </Text>
               ) : null}
@@ -427,7 +442,7 @@ const MoodDistribution = memo(function MoodDistribution({
               </View>
             </View>
             <View className="w-24 flex-row justify-end">
-              <Text className="text-xs text-ink/60">
+              <Text className="text-xs text-ink/70">
                 {MOOD_LABELS[mood]} · {count}
               </Text>
             </View>
@@ -450,18 +465,18 @@ const EntryRow = memo(function EntryRow({ log }: { log: MoodLog }) {
     : "";
 
   return (
-    <View className="mb-2 p-3 rounded-2xl bg-white border border-river-100">
+    <View className="mb-2 p-3 rounded-2xl bg-surface border border-river-100">
       <View className="flex-row justify-between items-start">
         <View className="flex-row items-center gap-3 flex-1 pr-2">
           <Text className="text-2xl">{emoji}</Text>
           <View className="flex-1">
             <Text className="text-sm font-semibold text-ink">{label}</Text>
-            <Text className="text-xs text-ink/50 mt-0.5">
+            <Text className="text-xs text-ink/70 mt-0.5">
               Energía: {log.energy ?? "—"}/5
             </Text>
           </View>
         </View>
-        <Text className="text-xs text-ink/50 shrink-0">{time}</Text>
+        <Text className="text-xs text-ink/70 shrink-0">{time}</Text>
       </View>
       {log.note && (
         <Text className="text-sm text-ink/70 mt-2 leading-5">{log.note}</Text>
@@ -469,3 +484,5 @@ const EntryRow = memo(function EntryRow({ log }: { log: MoodLog }) {
     </View>
   );
 });
+
+export default withErrorBoundary(MoodHistoryScreen, { source: "mood-history" });

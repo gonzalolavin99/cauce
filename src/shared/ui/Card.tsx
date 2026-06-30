@@ -1,6 +1,12 @@
 import { cn } from "@/src/shared/lib/cn";
+import { useReducedMotion } from "@/src/shared/lib/useReducedMotion";
 import type { ReactNode } from "react";
 import { Pressable, View, type ViewProps } from "react-native";
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming,
+} from "react-native-reanimated";
 
 type Variant = "default" | "muted" | "warm" | "outline";
 
@@ -36,7 +42,7 @@ export function Card({
   const base = cn(
     "rounded-3xl border",
     !unpadded && "p-5",
-    variant === "default" && "bg-white border-river-100",
+    variant === "default" && "bg-surface border-river-100",
     variant === "muted" && "bg-river-50 border-river-100",
     variant === "warm" && "bg-sand/80 border-river-100",
     variant === "outline" && "bg-transparent border-river-100",
@@ -57,13 +63,14 @@ export function Card({
 
   if (onPress) {
     return (
-      <Pressable
+      <PressableCard
         onPress={onPress}
         className={cn(base, "active:opacity-80")}
         style={[shadowStyle, style as object]}
+        {...rest}
       >
         {children}
-      </Pressable>
+      </PressableCard>
     );
   }
 
@@ -71,5 +78,45 @@ export function Card({
     <View className={base} style={[shadowStyle, style as object]} {...rest}>
       {children}
     </View>
+  );
+}
+
+/**
+ * Card presionable con feedback de escala (3.3), mismo patrón que Button:
+ * el Animated.View externo anima; el Pressable interno lleva el className
+ * (NativeWind no aplica className sobre componentes animados en web).
+ */
+function PressableCard({
+  children,
+  onPress,
+  className,
+  style,
+  ...rest
+}: ViewProps & { children: ReactNode; onPress: () => void; className?: string }) {
+  const reduceMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={() => {
+          if (!reduceMotion) scale.value = withTiming(0.97, { duration: 90 });
+        }}
+        onPressOut={() => {
+          if (!reduceMotion) scale.value = withTiming(1, { duration: 160 });
+        }}
+        accessibilityRole="button"
+        className={className}
+        style={style}
+        {...rest}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
   );
 }

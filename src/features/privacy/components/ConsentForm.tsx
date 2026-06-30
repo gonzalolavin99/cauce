@@ -1,3 +1,4 @@
+import { showAlert } from "@/src/shared/ui/alert";
 import {
   CONSENT_DESCRIPTIONS,
   CONSENT_LABELS,
@@ -9,7 +10,7 @@ import { Button } from "@/src/shared/ui/Button";
 import type { ConsentType } from "@/src/types/database.types";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 interface ConsentFormProps {
   /** Callback tras registrar los consentimientos exitosamente */
@@ -50,7 +51,7 @@ export function ConsentForm({
       onGranted();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error desconocido";
-      Alert.alert("No se pudo registrar tu consentimiento", message);
+      showAlert("No se pudo registrar tu consentimiento", message);
     }
   }
 
@@ -118,7 +119,7 @@ function ConsentCard({ type, value, onChange, required }: ConsentCardProps) {
         "mb-3 p-4 rounded-2xl border",
         value
           ? "bg-river-50 border-river-500"
-          : "bg-white border-river-100"
+          : "bg-surface border-river-100"
       )}
     >
       <View className="flex-row items-start">
@@ -127,7 +128,7 @@ function ConsentCard({ type, value, onChange, required }: ConsentCardProps) {
             "w-6 h-6 rounded-md border-2 mr-3 mt-0.5 items-center justify-center",
             value
               ? "bg-river-500 border-river-500"
-              : "bg-white border-river-300"
+              : "bg-surface border-river-300"
           )}
         >
           {value && (

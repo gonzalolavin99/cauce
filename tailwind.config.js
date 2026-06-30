@@ -6,30 +6,32 @@ module.exports = {
     "./components/**/*.{js,jsx,ts,tsx}",
   ],
   presets: [require("nativewind/preset")],
+  // Modo oscuro por clase (3.1): nativewind `colorScheme.set()` la maneja en
+  // ambas plataformas. Los valores viven como CSS variables en global.css.
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
-        // Paleta Cauce — tonos serenos, bajo contraste agresivo
-        bg: {
-          DEFAULT: "#F7F5F2",   // beige muy suave
-          dark: "#0F1115",
-        },
-        ink: {
-          DEFAULT: "#1A1F2B",
-          dark: "#E8E6E1",
-        },
+        // Paleta Cauce — tonos serenos, bajo contraste agresivo.
+        // Los valores son triplets RGB en variables (global.css) para que
+        // TODA la app cambie de tema sin tocar cada className, y los
+        // modificadores de opacidad (text-ink/70) sigan funcionando.
+        bg: "rgb(var(--c-bg) / <alpha-value>)",
+        surface: "rgb(var(--c-surface) / <alpha-value>)", // cards (ex bg-white)
+        ink: "rgb(var(--c-ink) / <alpha-value>)",
         river: {
-          50:  "#EEF5F5",
-          100: "#D6E7E7",
-          300: "#8FBDBE",
-          500: "#4E8B8C",      // primario — azul verdoso calmo
-          700: "#2E5F60",
-          900: "#193838",
+          50: "rgb(var(--c-river-50) / <alpha-value>)",
+          100: "rgb(var(--c-river-100) / <alpha-value>)",
+          300: "rgb(var(--c-river-300) / <alpha-value>)",
+          500: "rgb(var(--c-river-500) / <alpha-value>)",
+          700: "rgb(var(--c-river-700) / <alpha-value>)",
+          900: "rgb(var(--c-river-900) / <alpha-value>)",
         },
         sand: {
-          500: "#C9A875",       // acento cálido
+          DEFAULT: "rgb(var(--c-sand) / <alpha-value>)",
+          500: "rgb(var(--c-sand) / <alpha-value>)",
         },
-        alert: "#C6553F",       // crisis, sobrio
+        alert: "rgb(var(--c-alert) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["System"],

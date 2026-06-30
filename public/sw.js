@@ -8,7 +8,7 @@
  *    sensibles ni respuestas de auth).
  */
 
-const CACHE_VERSION = "cauce-v1";
+const CACHE_VERSION = "cauce-v2";
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const ASSET_CACHE = `${CACHE_VERSION}-assets`;
 

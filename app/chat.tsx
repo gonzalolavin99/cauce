@@ -1,3 +1,4 @@
+import { showAlert } from "@/src/shared/ui/alert";
 import { detectCrisis } from "@/src/features/ai-advisor/engine/crisis";
 import {
     useActiveConversation,
@@ -5,6 +6,10 @@ import {
     type AiMessage,
 } from "@/src/features/ai-advisor/hooks/useAiConversation";
 import { useSendMessage } from "@/src/features/ai-advisor/hooks/useSendMessage";
+import {
+    isStreamingSupported,
+    streamMessage,
+} from "@/src/features/ai-advisor/hooks/useStreamMessage";
 import {
     isCrisisPlanUseful,
     useCrisisPlan,
@@ -27,18 +32,31 @@ import {
     useRecordConsent,
 } from "@/src/features/privacy/hooks/useConsents";
 import { cn } from "@/src/shared/lib/cn";
+import { useReducedMotion } from "@/src/shared/lib/useReducedMotion";
+import { useAccentColor } from "@/src/shared/theme/useAccentColor";
+import { usePlaceholderColor } from "@/src/shared/theme/usePlaceholderColor";
 import { Button } from "@/src/shared/ui/Button";
 import { EmptyState } from "@/src/shared/ui/EmptyState";
 import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
 import { CardSkeleton } from "@/src/shared/ui/Skeleton";
+import { withErrorBoundary } from "@/src/shared/ui/withErrorBoundary";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
+import Animated, {
+    FadeInDown,
+    useAnimatedStyle,
+    useSharedValue,
+    withDelay,
+    withRepeat,
+    withSequence,
+    withTiming,
+} from "react-native-reanimated";
 import {
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -48,7 +66,24 @@ import {
     View,
 } from "react-native";
 
-export default function ChatScreen() {
+// Quick replies (7.2.2): atajos para bajar la fricción de escribir.
+// Starters cuando aún no hay conversación; seguimientos tras una respuesta.
+const STARTER_REPLIES = [
+  "Quiero hablar de cómo me siento",
+  "Me siento ansioso/a",
+  "No puedo dormir",
+  "Necesito calmarme",
+  "Me siento abrumado/a",
+];
+const FOLLOWUP_REPLIES = [
+  "Cuéntame más",
+  "Prefiero solo hablar",
+  "¿Qué puedo hacer?",
+  "Dame un ejercicio",
+  "Gracias",
+];
+
+function ChatScreen() {
   const router = useRouter();
   const { current, isLoading: consentLoading } = useConsents();
   const recordConsent = useRecordConsent();
@@ -76,7 +111,7 @@ export default function ChatScreen() {
             [{ type: "ai_advisor", action: "grant" }],
             {
               onError: (err: Error) =>
-                Alert.alert("No se pudo guardar", err.message),
+                showAlert("No se pudo guardar", err.message),
             }
           )
         }
@@ -121,7 +156,7 @@ function AiConsentGate({
           </Text>
         </View>
 
-        <View className="mb-6 p-4 rounded-2xl bg-white border border-river-100">
+        <View className="mb-6 p-4 rounded-2xl bg-surface border border-river-100">
           <Text className="text-sm font-semibold text-ink mb-3">
             Antes de aceptar, ten presente:
           </Text>
@@ -171,7 +206,10 @@ function Bullet({ children }: { children: React.ReactNode }) {
 // ====================================================================
 
 function ChatBody({ onClose }: { onClose: () => void }) {
+  const placeholderColor = usePlaceholderColor();
+  const accent = useAccentColor();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: activeConvId } = useActiveConversation();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const { data: messages, isLoading } = useMessages(conversationId);
@@ -186,111 +224,154 @@ function ChatBody({ onClose }: { onClose: () => void }) {
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(
     null
   );
+  // Texto del asistente que se va llenando token a token (solo web/streaming).
+  // null = no hay stream en curso; "" = stream iniciado, aún sin tokens.
+  const [streamingText, setStreamingText] = useState<string | null>(null);
+  // Sugerencias de seguimiento generadas por el LLM (7.2.1) para la última
+  // respuesta. Si están vacías, caemos a las estáticas.
+  const [dynamicSuggestions, setDynamicSuggestions] = useState<string[]>([]);
   const scrollRef = useRef<ScrollView | null>(null);
+
+  const isStreaming = streamingText !== null;
+  // "Ocupado": bloquea reenvíos tanto en la ruta nativa como en streaming.
+  const isBusy = sendMessage.isPending || isStreaming;
 
   // Sincronizar conversación activa al montar
   useEffect(() => {
     if (activeConvId && !conversationId) setConversationId(activeConvId);
   }, [activeConvId, conversationId]);
 
-  // Auto-scroll al final cuando llegan mensajes nuevos o cuando el usuario
-  // acaba de enviar un mensaje (optimista).
+  // Auto-scroll al final cuando llegan mensajes nuevos, al enviar (optimista)
+  // o a medida que llegan tokens del stream.
   useEffect(() => {
     const t = setTimeout(() => {
       scrollRef.current?.scrollToEnd({ animated: true });
     }, 100);
     return () => clearTimeout(t);
-  }, [messages?.length, sendMessage.isPending, pendingUserMessage]);
+  }, [messages?.length, isBusy, pendingUserMessage, streamingText]);
 
   const inputCrisis = useMemo(() => detectCrisis(input), [input]);
 
+  // Efectos al detectar crisis en la respuesta: háptica + check-in opcional.
+  function handleCrisisFlagged() {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(
+      () => {}
+    );
+    if (notifPrefs.post_crisis_checkin_enabled) {
+      void (async () => {
+        try {
+          const granted = await hasNotificationPermission();
+          if (!granted) return;
+          await ensureAndroidChannel();
+          await schedulePostCrisisCheckin();
+        } catch {
+          // silent — no bloqueamos el chat por esto
+        }
+      })();
+    }
+  }
+
+  // SEC-3 M4: mapear códigos del server a mensajes en español. Nunca mostramos
+  // el código crudo ("rate_limited", etc.) porque no es útil para el usuario.
+  function showErrorForCode(code: string) {
+    if (code === "ai_consent_missing") {
+      showAlert(
+        "Consentimiento requerido",
+        "Necesitamos tu consentimiento para usar el asistente con IA."
+      );
+    } else if (code === "rate_limited") {
+      showAlert(
+        "Muchos mensajes seguidos",
+        "Has mandado varios mensajes en poco tiempo. Descansa unos minutos y vuelve a intentar."
+      );
+    } else if (code === "message_too_long") {
+      showAlert("Mensaje muy largo", "Intenta con un mensaje más corto.");
+    } else if (code === "invalid_conversation_id") {
+      showAlert(
+        "Conversación inválida",
+        "No pudimos identificar esta conversación. Intenta abrir una nueva."
+      );
+    } else if (code.startsWith("llm_timeout_")) {
+      showAlert(
+        "El asistente está lento",
+        "No obtuvimos respuesta a tiempo. Intenta de nuevo en un momento."
+      );
+    } else {
+      showAlert("No se pudo enviar", "Intenta de nuevo en un momento.");
+    }
+  }
+
   function handleSend() {
-    const trimmed = input.trim();
-    if (!trimmed || sendMessage.isPending) return;
+    sendText(input.trim());
+  }
+
+  // Envía un texto (del input o de un quick reply). Respuesta optimista:
+  // limpiamos el input y mostramos el mensaje del usuario al instante.
+  function sendText(trimmed: string) {
+    if (!trimmed || isBusy) return;
 
     Haptics.selectionAsync().catch(() => {});
 
-    // Respuesta optimista: limpiamos el input y mostramos el mensaje del
-    // usuario inmediatamente. Cuando el servidor responde, invalidamos la
-    // query de mensajes y el bubble optimista se reemplaza por el persistido.
     setInput("");
     setPendingUserMessage(trimmed);
+    setDynamicSuggestions([]); // las de la respuesta anterior ya no aplican
 
+    if (isStreamingSupported()) {
+      handleStreamSend(trimmed);
+    } else {
+      handleMutationSend(trimmed);
+    }
+  }
+
+  // Ruta web: streaming token a token vía SSE.
+  function handleStreamSend(trimmed: string) {
+    setStreamingText("");
+    void streamMessage(
+      { conversationId, message: trimmed },
+      {
+        onDelta: (text) => setStreamingText((prev) => (prev ?? "") + text),
+        onDone: (res) => {
+          setConversationId(res.conversation_id);
+          setStreamingText(null);
+          setPendingUserMessage(null);
+          setDynamicSuggestions(res.suggestions ?? []);
+          queryClient.invalidateQueries({
+            queryKey: ["ai-messages", res.conversation_id],
+          });
+          queryClient.invalidateQueries({
+            queryKey: ["ai-active-conversation"],
+          });
+          if (res.flagged_for_crisis) handleCrisisFlagged();
+        },
+        // Las sugerencias llegan después de `done` en su propio evento
+        // (ya no bloquean el fin del mensaje).
+        onSuggestions: (suggestions) => setDynamicSuggestions(suggestions),
+        onError: (code) => {
+          setStreamingText(null);
+          setPendingUserMessage(null);
+          setInput(trimmed);
+          showErrorForCode(code);
+        },
+      }
+    );
+  }
+
+  // Ruta nativa / fallback: respuesta completa (no-streaming).
+  function handleMutationSend(trimmed: string) {
     sendMessage.mutate(
       { conversationId, message: trimmed },
       {
         onSuccess: (data) => {
           setConversationId(data.conversation_id);
           setPendingUserMessage(null);
-          if (data.flagged_for_crisis) {
-            Haptics.notificationAsync(
-              Haptics.NotificationFeedbackType.Warning
-            ).catch(() => {});
-
-            // Check-in 24h después, sólo si la persona lo activó en ajustes.
-            if (notifPrefs.post_crisis_checkin_enabled) {
-              void (async () => {
-                try {
-                  const granted = await hasNotificationPermission();
-                  if (!granted) return;
-                  await ensureAndroidChannel();
-                  await schedulePostCrisisCheckin();
-                } catch {
-                  // silent — no bloqueamos el chat por esto
-                }
-              })();
-            }
-          }
+          setDynamicSuggestions(data.suggestions ?? []);
+          if (data.flagged_for_crisis) handleCrisisFlagged();
         },
         onError: (err: Error) => {
           // Si falló, devolvemos el texto al input para que pueda reintentar.
           setPendingUserMessage(null);
           setInput(trimmed);
-
-          // SEC-3 M4: mapear códigos del server a mensajes en español.
-          // Nunca mostramos el .message crudo porque puede filtrar tokens
-          // técnicos ("rate_limited", "invalid_conversation_id") que no son
-          // útiles para el usuario.
-          const code = err.message ?? "";
-          if (code === "ai_consent_missing") {
-            Alert.alert(
-              "Consentimiento requerido",
-              "Necesitamos tu consentimiento para usar el asistente con IA."
-            );
-            return;
-          }
-          if (code === "rate_limited") {
-            Alert.alert(
-              "Muchos mensajes seguidos",
-              "Has mandado varios mensajes en poco tiempo. Descansa unos minutos y vuelve a intentar."
-            );
-            return;
-          }
-          if (code === "message_too_long") {
-            Alert.alert(
-              "Mensaje muy largo",
-              "Intenta con un mensaje más corto."
-            );
-            return;
-          }
-          if (code === "invalid_conversation_id") {
-            Alert.alert(
-              "Conversación inválida",
-              "No pudimos identificar esta conversación. Intenta abrir una nueva."
-            );
-            return;
-          }
-          if (code.startsWith("llm_timeout_")) {
-            Alert.alert(
-              "El asistente está lento",
-              "No obtuvimos respuesta a tiempo. Intenta de nuevo en un momento."
-            );
-            return;
-          }
-          Alert.alert(
-            "No se pudo enviar",
-            "Intenta de nuevo en un momento."
-          );
+          showErrorForCode(err.message ?? "");
         },
       }
     );
@@ -304,6 +385,20 @@ function ChatBody({ onClose }: { onClose: () => void }) {
   const hasMessages = (messages?.length ?? 0) > 0;
   const showCrisisBanner = inputCrisis.isCrisis;
 
+  // Quick replies: starters si no hay conversación; seguimientos si lo último
+  // fue una respuesta del asistente. Nunca mientras se está enviando/escribiendo.
+  const lastMessage = messages?.[(messages?.length ?? 0) - 1];
+  const idle = !isBusy && !pendingUserMessage && !input.trim();
+  const quickReplies = !idle
+    ? []
+    : !hasMessages
+      ? STARTER_REPLIES
+      : lastMessage?.role === "assistant"
+        ? dynamicSuggestions.length > 0
+          ? dynamicSuggestions
+          : FOLLOWUP_REPLIES
+        : [];
+
   return (
     <Screen>
       <KeyboardAvoidingView
@@ -313,7 +408,7 @@ function ChatBody({ onClose }: { onClose: () => void }) {
       >
         {/* Header compacto sticky: el chat necesita el header pegado y con
             borde visible, por eso no usamos el PageHeader generoso acá. */}
-        <View className="px-5 pt-3 pb-3 border-b border-river-100 flex-row items-center bg-white/60">
+        <View className="px-5 pt-3 pb-3 border-b border-river-100 flex-row items-center bg-surface/60">
           <Pressable
             onPress={onClose}
             hitSlop={12}
@@ -321,7 +416,7 @@ function ChatBody({ onClose }: { onClose: () => void }) {
             accessibilityLabel="Volver"
             accessibilityRole="button"
           >
-            <Ionicons name="chevron-back" size={20} color="#2E5F60" />
+            <Ionicons name="chevron-back" size={20} color={accent} />
           </Pressable>
           <View
             accessibilityElementsHidden
@@ -343,7 +438,7 @@ function ChatBody({ onClose }: { onClose: () => void }) {
                 importantForAccessibility="no"
                 className="w-1.5 h-1.5 rounded-full bg-river-500 mr-1.5"
               />
-              <Text className="text-xs text-ink/60">IA · no es terapia</Text>
+              <Text className="text-xs text-ink/70">IA · no es terapia</Text>
             </View>
           </View>
         </View>
@@ -389,14 +484,29 @@ function ChatBody({ onClose }: { onClose: () => void }) {
             </View>
           )}
 
-          {sendMessage.isPending && (
+          {/* Respuesta del asistente en vivo (streaming, token a token) */}
+          {isStreaming && !!streamingText && (
+            <View
+              accessible
+              accessibilityLiveRegion="polite"
+              className="my-1 max-w-[85%] px-4 py-3 rounded-2xl self-start bg-river-50 border border-river-100"
+            >
+              <Text className="text-sm leading-5 text-ink">
+                {streamingText}
+              </Text>
+            </View>
+          )}
+
+          {/* Typing indicator mientras esperamos: ruta nativa, o streaming
+              antes del primer token. */}
+          {(sendMessage.isPending || (isStreaming && !streamingText)) && (
             <View
               accessible
               accessibilityLiveRegion="polite"
               accessibilityLabel="El asistente está pensando"
-              className="my-2 px-4 py-3 rounded-2xl self-start bg-river-50 border border-river-100"
+              className="my-2 px-4 py-3.5 rounded-2xl self-start bg-river-50 border border-river-100"
             >
-              <Text className="text-sm text-ink/50">Pensando…</Text>
+              <TypingDots />
             </View>
           )}
         </ScrollView>
@@ -431,7 +541,7 @@ function ChatBody({ onClose }: { onClose: () => void }) {
                   }}
                   accessibilityRole="button"
                   accessibilityLabel="Ver mi plan de crisis"
-                  className="px-3 py-2 rounded-xl bg-white border border-alert/40"
+                  className="px-3 py-2 rounded-xl bg-surface border border-alert/40"
                 >
                   <Text className="text-alert text-sm font-semibold">
                     Ver mi plan
@@ -442,30 +552,56 @@ function ChatBody({ onClose }: { onClose: () => void }) {
           </View>
         )}
 
+        {/* Quick replies (chips sugeridos) */}
+        {quickReplies.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+            className="max-h-12 mb-1"
+          >
+            {quickReplies.map((reply) => (
+              <Pressable
+                key={reply}
+                onPress={() => sendText(reply)}
+                accessibilityRole="button"
+                accessibilityLabel={reply}
+                className="px-3 py-2 rounded-full bg-river-50 border border-river-100 active:bg-river-100"
+              >
+                <Text className="text-sm text-river-700 font-medium">
+                  {reply}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
+
         {/* Input */}
-        <View className="flex-row items-end gap-2 px-4 py-3 border-t border-river-100 bg-white">
+        <View className="flex-row items-end gap-2 px-4 py-3 border-t border-river-100 bg-surface">
           <TextInput
             value={input}
             onChangeText={setInput}
             placeholder="Cuéntame cómo estás…"
-            placeholderTextColor="rgba(0,0,0,0.4)"
+            placeholderTextColor={placeholderColor}
             multiline
             maxLength={4000}
-            className="flex-1 px-4 py-3 rounded-2xl border border-river-100 bg-white text-ink"
-            style={{ minHeight: 44, maxHeight: 120, textAlignVertical: "top" }}
+            className="flex-1 px-4 py-3 rounded-2xl border border-river-100 bg-surface text-ink"
+            // fontSize ≥ 16: bajo eso, iOS Safari hace auto-zoom al enfocar el campo
+            style={{ minHeight: 44, maxHeight: 120, textAlignVertical: "top", fontSize: 16 }}
           />
           <Pressable
             onPress={handleSend}
-            disabled={!input.trim() || sendMessage.isPending}
+            disabled={!input.trim() || isBusy}
             accessibilityRole="button"
             accessibilityLabel="Enviar mensaje"
             accessibilityState={{
-              disabled: !input.trim() || sendMessage.isPending,
-              busy: sendMessage.isPending,
+              disabled: !input.trim() || isBusy,
+              busy: isBusy,
             }}
             className={cn(
               "px-4 py-3 rounded-2xl",
-              !input.trim() || sendMessage.isPending
+              !input.trim() || isBusy
                 ? "bg-river-100"
                 : "bg-river-500 active:bg-river-700"
             )}
@@ -473,9 +609,7 @@ function ChatBody({ onClose }: { onClose: () => void }) {
             <Text
               className={cn(
                 "text-sm font-semibold",
-                !input.trim() || sendMessage.isPending
-                  ? "text-ink/50"
-                  : "text-white"
+                !input.trim() || isBusy ? "text-ink/70" : "text-white"
               )}
             >
               Enviar
@@ -500,34 +634,93 @@ function ChatWelcome() {
   );
 }
 
+/**
+ * Tres puntos con pulso escalonado (3.3) — reemplaza al texto "Pensando…".
+ * Con reduced-motion quedan estáticos (el accessibilityLabel del contenedor
+ * ya anuncia el estado).
+ */
+function TypingDots() {
+  const reduceMotion = useReducedMotion();
+  return (
+    <View className="flex-row items-center gap-1.5">
+      {[0, 1, 2].map((i) => (
+        <TypingDot key={i} delay={i * 180} animate={!reduceMotion} />
+      ))}
+    </View>
+  );
+}
+
+function TypingDot({ delay, animate }: { delay: number; animate: boolean }) {
+  const opacity = useSharedValue(0.35);
+
+  useEffect(() => {
+    if (!animate) return;
+    opacity.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 320 }),
+          withTiming(0.35, { duration: 320 })
+        ),
+        -1
+      )
+    );
+  }, [animate, delay, opacity]);
+
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  // Estilos inline: NativeWind no aplica className sobre Animated.View en web.
+  return (
+    <Animated.View
+      style={[
+        style,
+        { width: 8, height: 8, borderRadius: 4, backgroundColor: "#4E8B8C" },
+      ]}
+    />
+  );
+}
+
 const MessageBubble = memo(function MessageBubble({
   msg,
 }: {
   msg: AiMessage;
 }) {
   const isUser = msg.role === "user";
+  const reduceMotion = useReducedMotion();
   return (
-    <View
-      className={cn(
-        "my-1 max-w-[85%] px-4 py-3 rounded-2xl",
-        isUser
-          ? "self-end bg-river-500"
-          : "self-start bg-river-50 border border-river-100"
-      )}
+    // Animated.View externo solo anima (className no funciona en animados
+    // en web); el View interno lleva los estilos.
+    <Animated.View
+      entering={reduceMotion ? undefined : FadeInDown.duration(200)}
+      style={{
+        alignSelf: isUser ? "flex-end" : "flex-start",
+        maxWidth: "85%",
+      }}
     >
-      <Text
+      <View
         className={cn(
-          "text-sm leading-5",
-          isUser ? "text-white" : "text-ink"
+          "my-1 px-4 py-3 rounded-2xl",
+          isUser
+            ? "bg-river-500"
+            : "bg-river-50 border border-river-100"
         )}
       >
-        {msg.content}
-      </Text>
-      {msg.flagged_for_crisis && !isUser && (
-        <Text className="text-xs text-alert mt-2">
-          Mensaje marcado como sensible
+        <Text
+          className={cn(
+            "text-sm leading-5",
+            isUser ? "text-white" : "text-ink"
+          )}
+        >
+          {msg.content}
         </Text>
-      )}
-    </View>
+        {msg.flagged_for_crisis && !isUser && (
+          <Text className="text-xs text-alert mt-2">
+            Mensaje marcado como sensible
+          </Text>
+        )}
+      </View>
+    </Animated.View>
   );
 });
+
+export default withErrorBoundary(ChatScreen, { source: "chat" });

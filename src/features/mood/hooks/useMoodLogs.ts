@@ -27,31 +27,75 @@ export interface CreateMoodLogInput {
   note?: string | null;
 }
 
+interface MoodLogMutationContext {
+  /** Snapshots de cada query ["mood-logs", …] para rollback ante error. */
+  previous: Array<[readonly unknown[], MoodLog[] | undefined]>;
+}
+
 export function useCreateMoodLog() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (input: CreateMoodLogInput) => {
-      if (!user) throw new Error("No autenticado");
+  return useMutation<MoodLog, Error, CreateMoodLogInput, MoodLogMutationContext>(
+    {
+      mutationFn: async (input: CreateMoodLogInput) => {
+        if (!user) throw new Error("No autenticado");
 
-      const payload = {
-        user_id: user.id,
-        mood: input.mood,
-        energy: input.energy,
-        note: input.note?.trim() || null,
-      };
+        const payload = {
+          user_id: user.id,
+          mood: input.mood,
+          energy: input.energy,
+          note: input.note?.trim() || null,
+        };
 
-      const { data, error } = await (supabase.from("mood_logs") as any)
-        .insert(payload)
-        .select()
-        .single();
+        const { data, error } = await (supabase.from("mood_logs") as any)
+          .insert(payload)
+          .select()
+          .single();
 
-      if (error) throw error;
-      return data as MoodLog;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["mood-logs"] });
-    },
-  });
+        if (error) throw error;
+        return data as MoodLog;
+      },
+      // Optimistic update: la entrada aparece al instante en cada lista de
+      // mood-logs (la pantalla de hoy y el historial). Se reconcilia con el
+      // servidor en onSettled; ante error, rollback con el snapshot.
+      onMutate: async (input) => {
+        await queryClient.cancelQueries({ queryKey: ["mood-logs"] });
+
+        const previous = queryClient.getQueriesData<MoodLog[]>({
+          queryKey: ["mood-logs"],
+        });
+
+        const optimistic: MoodLog = {
+          id: `optimistic-${Date.now()}`,
+          user_id: user?.id ?? null,
+          mood: input.mood,
+          energy: input.energy,
+          note: input.note?.trim() || null,
+          created_at: new Date().toISOString(),
+        };
+
+        queryClient.setQueriesData<MoodLog[]>(
+          { queryKey: ["mood-logs"] },
+          (old) => [optimistic, ...(old ?? [])]
+        );
+
+        return { previous };
+      },
+      onError: (_err, _input, context) => {
+        // Rollback: restauramos cada query a su estado previo.
+        for (const [key, data] of context?.previous ?? []) {
+          queryClient.setQueryData(key, data);
+        }
+      },
+      onSettled: () => {
+        // Trae el estado real (id/created_at del servidor) y refresca insights.
+        queryClient.invalidateQueries({ queryKey: ["mood-logs"] });
+        // 9.1: la racha depende de los check-ins.
+        queryClient.invalidateQueries({ queryKey: ["mood-streak"] });
+        // 9.2: el heatmap también.
+        queryClient.invalidateQueries({ queryKey: ["mood-heatmap"] });
+      },
+    }
+  );
 }
