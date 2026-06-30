@@ -284,6 +284,11 @@ function ChatBody({ onClose }: { onClose: () => void }) {
         "Muchos mensajes seguidos",
         "Has mandado varios mensajes en poco tiempo. Descansa unos minutos y vuelve a intentar."
       );
+    } else if (code === "monthly_limit_reached") {
+      showAlert(
+        "Límite mensual alcanzado",
+        "Usaste el asistente bastante este mes. Se renueva el próximo mes; mientras tanto, los ejercicios y tu plan de crisis siguen disponibles."
+      );
     } else if (code === "message_too_long") {
       showAlert("Mensaje muy largo", "Intenta con un mensaje más corto.");
     } else if (code === "invalid_conversation_id") {

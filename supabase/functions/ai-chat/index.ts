@@ -309,6 +309,30 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // 2.6 Cap de costo mensual — segunda capa, delegada a la función
+    // SECURITY DEFINER `check_and_increment_ai_monthly_usage` (migración
+    // 20260630000000). Va DESPUÉS del rate limit de 15 min a propósito: así
+    // los mensajes rechazados por ráfaga no consumen la cuota mensual.
+    {
+      const { data: mu, error: muErr } = await supabase.rpc(
+        "check_and_increment_ai_monthly_usage"
+      );
+      if (muErr) {
+        // Fail-open, igual que el rate limit: ante error de DB (p. ej.
+        // migración aún no aplicada) preferimos servir al usuario legítimo.
+        console.error("monthly usage rpc error", muErr);
+      } else if (mu && mu.allowed === false) {
+        return jsonResponse(
+          {
+            error: "monthly_limit_reached",
+            limit: Number(mu.limit) || null,
+            resets_at: mu.resets_at ?? null,
+          },
+          429
+        );
+      }
+    }
+
     // 3. Check ai_advisor consent (latest event must be 'grant')
     const { data: consentRows } = await supabase
       .from("consents")
