@@ -18,7 +18,7 @@ import { SectionHeader } from "@/src/shared/ui/SectionHeader";
 import { CardSkeleton } from "@/src/shared/ui/Skeleton";
 import { withErrorBoundary } from "@/src/shared/ui/withErrorBoundary";
 import type { CrisisPlan } from "@/src/types/database.types";
-import { Ionicons } from "@expo/vector-icons";
+import type { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ComponentProps } from "react";

@@ -193,7 +193,7 @@ export function computeStreak(logs: MoodLog[]): number {
   today.setHours(0, 0, 0, 0);
   const todayKey = toKeyFromDate(today);
 
-  let cursor = new Date(today);
+  const cursor = new Date(today);
   // Si hoy no hay entrada, empezar desde ayer
   if (!keysWithEntry.has(todayKey)) {
     cursor.setDate(cursor.getDate() - 1);

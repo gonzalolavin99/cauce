@@ -16,7 +16,7 @@ import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
 import { SectionHeader } from "@/src/shared/ui/SectionHeader";
 import type { ConsentType } from "@/src/types/database.types";
-import { Ionicons } from "@expo/vector-icons";
+import type { Ionicons } from "@expo/vector-icons";
 import type { ComponentProps } from "react";
 import { useRouter } from "expo-router";
 import {

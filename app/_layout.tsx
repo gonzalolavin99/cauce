@@ -67,7 +67,12 @@ function NotificationController() {
 
   useEffect(() => {
     const sub = addTapListener((route) => {
-      // @ts-expect-error — expo-router typed routes no reconocen string dinámico
+      // expo-router typed routes no aceptan un string dinámico. El error de
+      // tipos solo aparece cuando .expo/ generó los tipos de rutas (local);
+      // en CI no existen, por eso usamos ts-ignore (tolera que la línea tenga
+      // o no error) en vez de la variante estricta, que daría TS2578.
+      // biome-ignore lint/suspicious/noTsIgnore: necesitamos ts-ignore, no expect-error (el error de tipos solo existe en local con .expo/ generado).
+      // @ts-ignore
       router.push(route);
     });
     return () => sub.remove();
