@@ -1,26 +1,37 @@
 # Actualizaciones automáticas de dependencias (Seguridad 1.9,
-# docs/mejoras-pendientes-v2.md). PRs semanales, agrupadas para no inundar.
+# docs/mejoras-pendientes-v2.md). PRs MENSUALES y agrupadas para no inundar.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: "/"
     schedule:
-      interval: weekly
+      interval: monthly
     open-pull-requests-limit: 5
     groups:
       minor-y-patch:
         update-types: ["minor", "patch"]
     ignore:
-      # El SDK de Expo fija las versiones de react/react-native/expo-*;
-      # subirlas sueltas rompe la compatibilidad. Se actualizan en bloque
-      # con `npx expo install --fix` al subir de SDK.
+      # El SDK de Expo fija react/react-native/expo-* y los paquetes atados a
+      # su versión EXACTA. react-test-renderer debe igualar a react: subirlo
+      # solo (p. ej. 19.1 → 19.2) rompe la resolución de peers (ERESOLVE) en
+      # `npm ci`. Todo este bloque se actualiza junto con `npx expo install
+      # --fix` al subir de SDK.
       - dependency-name: "expo*"
       - dependency-name: "react-native*"
       - dependency-name: "react"
       - dependency-name: "react-dom"
+      - dependency-name: "react-test-renderer"
       - dependency-name: "@expo/*"
+      # Sin majors automáticos: tailwindcss 4, typescript 6, async-storage 3,
+      # etc. son cambios disruptivos que se evalúan a mano. Dependabot solo
+      # propone minor/patch (parches de seguridad incluidos).
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: weekly
+      interval: monthly
+    groups:
+      github-actions:
+        patterns: ["*"]
