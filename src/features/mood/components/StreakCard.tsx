@@ -2,6 +2,7 @@ import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { streakMilestone } from "@/src/features/mood/engine/streak";
 import { useStreak } from "@/src/features/mood/hooks/useStreak";
 import { useReducedMotion } from "@/src/shared/lib/useReducedMotion";
+import { useAccentColor } from "@/src/shared/theme/useAccentColor";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
@@ -30,6 +31,7 @@ export function StreakCard() {
   const { streak } = useStreak();
   const { user } = useAuth();
   const reduceMotion = useReducedMotion();
+  const accent = useAccentColor();
   const [celebrating, setCelebrating] = useState(false);
 
   const milestone = streak.current >= 2 ? streakMilestone(streak.current) : null;
@@ -72,7 +74,7 @@ export function StreakCard() {
           importantForAccessibility="no-hide-descendants"
           className="w-12 h-12 rounded-2xl bg-surface/70 items-center justify-center mr-3"
         >
-          <Ionicons name="leaf" size={22} color="#2F6D6E" />
+          <Ionicons name="leaf" size={22} color={accent} />
         </View>
         <View
           className="flex-1"

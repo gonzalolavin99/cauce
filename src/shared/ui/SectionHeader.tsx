@@ -1,3 +1,4 @@
+import { cn } from "@/src/shared/lib/cn";
 import { Ionicons } from "@expo/vector-icons";
 import type { ComponentProps, ReactNode } from "react";
 import { Text, View } from "react-native";
@@ -13,6 +14,9 @@ interface SectionHeaderProps {
   right?: ReactNode;
   /** Margin bottom. Default: 12. */
   spacing?: number;
+  /** Clase de color alternativa para la etiqueta (ej: "text-alert" en
+   *  secciones de emergencia). Reemplaza el `text-ink/70` por defecto. */
+  labelClassName?: string;
 }
 
 /**
@@ -26,6 +30,7 @@ export function SectionHeader({
   iconColor = "#2F6D6E",
   right,
   spacing = 12,
+  labelClassName,
 }: SectionHeaderProps) {
   return (
     <View
@@ -45,7 +50,10 @@ export function SectionHeader({
         )}
         <Text
           accessibilityRole="header"
-          className="text-xs uppercase text-ink/70 font-semibold tracking-wider"
+          className={cn(
+            "text-xs uppercase font-semibold tracking-wider",
+            labelClassName ?? "text-ink/70"
+          )}
         >
           {label}
         </Text>

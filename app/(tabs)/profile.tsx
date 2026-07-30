@@ -1,5 +1,3 @@
-import { showAlert } from "@/src/shared/ui/alert";
-import { showToast } from "@/src/shared/ui/toast";
 import { signOut, useAuth } from "@/src/features/auth/hooks/useAuth";
 import {
     resolvePrefs,
@@ -26,11 +24,6 @@ import {
     setAppLockEnabled,
     setScreenPrivacyEnabled,
 } from "@/src/features/privacy/lib/appLock";
-import {
-    getThemeMode,
-    setThemeMode,
-    type ThemeMode,
-} from "@/src/shared/theme/themeMode";
 import { useDeleteAccount } from "@/src/features/profile/hooks/useDeleteAccount";
 import { useDiagnoses } from "@/src/features/profile/hooks/useDiagnoses";
 import {
@@ -43,6 +36,9 @@ import {
     useUpdateProfile,
 } from "@/src/features/profile/hooks/useUpdateProfile";
 import { cn } from "@/src/shared/lib/cn";
+import { getThemeMode, setThemeMode, type ThemeMode } from "@/src/shared/theme/themeMode";
+import { useRiverColor } from "@/src/shared/theme/useRiverColor";
+import { showAlert } from "@/src/shared/ui/alert";
 import { Avatar, initialsFrom } from "@/src/shared/ui/Avatar";
 import { Button } from "@/src/shared/ui/Button";
 import { Card } from "@/src/shared/ui/Card";
@@ -51,6 +47,7 @@ import { Input } from "@/src/shared/ui/Input";
 import { ListRow } from "@/src/shared/ui/ListRow";
 import { Screen } from "@/src/shared/ui/Screen";
 import { SectionHeader } from "@/src/shared/ui/SectionHeader";
+import { showToast } from "@/src/shared/ui/toast";
 import { withErrorBoundary } from "@/src/shared/ui/withErrorBoundary";
 import type { Diagnosis, Mobility } from "@/src/types/database.types";
 import { useRouter } from "expo-router";
@@ -755,6 +752,8 @@ function ToggleRow({
   value: boolean;
   onChange: (v: boolean) => void;
 }) {
+  const trackOff = useRiverColor(100);
+  const trackOn = useRiverColor(500);
   return (
     <View className="flex-row items-center justify-between py-3 border-b border-river-100">
       <View className="flex-1 pr-4">
@@ -764,7 +763,7 @@ function ToggleRow({
       <Switch
         value={value}
         onValueChange={onChange}
-        trackColor={{ false: "#D6E7E7", true: "#4E8B8C" }}
+        trackColor={{ false: trackOff, true: trackOn }}
         thumbColor="#FFFFFF"
       />
     </View>

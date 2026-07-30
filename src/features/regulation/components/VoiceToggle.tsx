@@ -1,3 +1,4 @@
+import { useAccentColor } from "@/src/shared/theme/useAccentColor";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, Text } from "react-native";
 
@@ -11,6 +12,7 @@ interface VoiceToggleProps {
  * Accesible: se anuncia como switch con su estado.
  */
 export function VoiceToggle({ enabled, onToggle }: VoiceToggleProps) {
+  const accent = useAccentColor();
   return (
     <Pressable
       onPress={onToggle}
@@ -23,7 +25,7 @@ export function VoiceToggle({ enabled, onToggle }: VoiceToggleProps) {
       <Ionicons
         name={enabled ? "volume-high" : "volume-mute"}
         size={18}
-        color="#2F6D6E"
+        color={accent}
       />
       <Text className="text-sm text-river-700 font-medium">
         {enabled ? "Voz activada" : "Voz silenciada"}

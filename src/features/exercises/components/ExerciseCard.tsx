@@ -1,11 +1,12 @@
 import {
-  CATEGORY_LABELS,
-  EVIDENCE_LABELS,
+    CATEGORY_LABELS,
+    EVIDENCE_LABELS,
 } from "@/src/features/exercises/data/labels";
+import { useAccentColor } from "@/src/shared/theme/useAccentColor";
 import type {
-  EvidenceLevel,
-  Exercise,
-  ExerciseCategory,
+    EvidenceLevel,
+    Exercise,
+    ExerciseCategory,
 } from "@/src/types/database.types";
 import { Ionicons } from "@expo/vector-icons";
 import { memo, useCallback } from "react";
@@ -28,6 +29,7 @@ const CATEGORY_ICONS: Record<
 };
 
 function ExerciseCardComponent({ exercise, onPress }: ExerciseCardProps) {
+  const accent = useAccentColor();
   const minutes = Math.max(1, Math.round(exercise.duration_seconds / 60));
   const category = (exercise.category ?? "breathing") as ExerciseCategory;
   const evidence = (exercise.evidence_level ?? "emerging") as EvidenceLevel;
@@ -54,7 +56,7 @@ function ExerciseCardComponent({ exercise, onPress }: ExerciseCardProps) {
           importantForAccessibility="no-hide-descendants"
           className="h-10 w-10 rounded-2xl bg-surface items-center justify-center border border-river-100"
         >
-          <Ionicons name={iconName} size={18} color="#2F6D6E" />
+          <Ionicons name={iconName} size={18} color={accent} />
         </View>
         <View className="flex-1">
           <View className="flex-row justify-between items-start mb-1">

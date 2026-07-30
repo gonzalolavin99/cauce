@@ -7,6 +7,8 @@ import { ExerciseRunner } from "@/src/features/regulation/components/ExerciseRun
 import { FeelingSelector } from "@/src/features/regulation/components/FeelingSelector";
 import { useLogSession } from "@/src/features/regulation/hooks/useLogSession";
 import { useReducedMotion } from "@/src/shared/lib/useReducedMotion";
+import { useAccentColor } from "@/src/shared/theme/useAccentColor";
+import { useRiverColor } from "@/src/shared/theme/useRiverColor";
 import { Avatar } from "@/src/shared/ui/Avatar";
 import { Button } from "@/src/shared/ui/Button";
 import { Screen } from "@/src/shared/ui/Screen";
@@ -51,6 +53,7 @@ function RegulateScreen() {
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   const { ranked, isLoading } = useRecommendedExercises(feeling);
+  const accent = useAccentColor();
   const { data: prefs } = useSensoryPreferences();
   const { startSession, completeSession } = useLogSession();
 
@@ -174,7 +177,7 @@ function RegulateScreen() {
           <View className="flex-1 justify-center">
             {/* Categoría pill con icono */}
             <View className="flex-row items-center gap-2 mb-4 self-start px-3 py-1.5 rounded-full bg-river-50 border border-river-100">
-              <Ionicons name={iconName} size={14} color="#2F6D6E" />
+              <Ionicons name={iconName} size={14} color={accent} />
               <Text className="text-xs uppercase text-river-700 font-semibold tracking-wider">
                 {categoryLabel}
               </Text>
@@ -198,7 +201,7 @@ function RegulateScreen() {
                     <Ionicons
                       name="sparkles"
                       size={12}
-                      color="#2F6D6E"
+                      color={accent}
                     />
                     <Text className="text-sm text-river-700">{reason}</Text>
                   </View>
@@ -284,6 +287,7 @@ function RegulateScreen() {
  */
 function DoneWave() {
   const reduced = useReducedMotion();
+  const ringColor = useRiverColor(500);
   const scale1 = useSharedValue(1);
   const opacity1 = useSharedValue(0.6);
   const scale2 = useSharedValue(1);
@@ -344,7 +348,7 @@ function DoneWave() {
                 height: 140,
                 borderRadius: 70,
                 borderWidth: 2,
-                borderColor: "#4E8B8C",
+                borderColor: ringColor,
               },
               ring1Style,
             ]}
@@ -357,7 +361,7 @@ function DoneWave() {
                 height: 140,
                 borderRadius: 70,
                 borderWidth: 2,
-                borderColor: "#4E8B8C",
+                borderColor: ringColor,
               },
               ring2Style,
             ]}

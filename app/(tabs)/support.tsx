@@ -4,8 +4,10 @@ import {
     isCrisisPlanUseful,
     useCrisisPlan,
 } from "@/src/features/crisis/hooks/useCrisisPlan";
+import { useAccentColor } from "@/src/shared/theme/useAccentColor";
 import { Card } from "@/src/shared/ui/Card";
 import { Screen } from "@/src/shared/ui/Screen";
+import { SectionHeader } from "@/src/shared/ui/SectionHeader";
 import { withErrorBoundary } from "@/src/shared/ui/withErrorBoundary";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -14,6 +16,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 
 function SupportScreen() {
   const router = useRouter();
+  const accent = useAccentColor();
   const { data } = useCrisisPlan();
   const plan = data?.plan ?? null;
   const hasPlan = isCrisisPlanUseful(plan);
@@ -41,7 +44,7 @@ function SupportScreen() {
           className={
             hasPlan
               ? "mb-8 p-5 rounded-3xl bg-river-500 active:bg-river-700"
-              : "mb-8 p-5 rounded-3xl bg-sand border border-river-200 active:bg-river-50"
+              : "mb-8 p-5 rounded-3xl bg-sand border border-river-100 active:bg-river-50"
           }
           style={
             hasPlan
@@ -66,7 +69,7 @@ function SupportScreen() {
               <Ionicons
                 name={hasPlan ? "shield-checkmark" : "shield-outline"}
                 size={22}
-                color={hasPlan ? "#FFFFFF" : "#2F6D6E"}
+                color={hasPlan ? "#FFFFFF" : accent}
               />
             </View>
             <View className="flex-1">
@@ -111,12 +114,12 @@ function SupportScreen() {
         {/* Sección emergencia */}
         {emergency.length > 0 && (
           <View className="mb-6">
-            <View className="flex-row items-center mb-3 gap-2">
-              <Ionicons name="alert-circle" size={14} color="#C0392B" />
-              <Text className="text-xs uppercase text-alert font-semibold tracking-wider">
-                Emergencia
-              </Text>
-            </View>
+            <SectionHeader
+              label="Emergencia"
+              icon="alert-circle"
+              iconColor="#C0392B"
+              labelClassName="text-alert"
+            />
             <View className="gap-3">
               {emergency.map((r) => (
                 <ResourceCard key={r.id} resource={r} />
@@ -127,12 +130,7 @@ function SupportScreen() {
 
         {/* Sección apoyo general */}
         <View className="mb-8">
-          <View className="flex-row items-center mb-3 gap-2">
-            <Ionicons name="heart-outline" size={14} color="#2F6D6E" />
-            <Text className="text-xs uppercase text-ink/70 font-semibold tracking-wider">
-              Apoyo psicológico
-            </Text>
-          </View>
+          <SectionHeader label="Apoyo psicológico" icon="heart-outline" />
           <View className="gap-3">
             {others.map((r) => (
               <ResourceCard key={r.id} resource={r} />
@@ -146,7 +144,7 @@ function SupportScreen() {
             <Ionicons
               name="information-circle-outline"
               size={18}
-              color="#2F6D6E"
+              color={accent}
               style={{ marginTop: 1 }}
             />
             <Text className="flex-1 text-xs text-ink/70 leading-5">

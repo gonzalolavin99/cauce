@@ -1,3 +1,4 @@
+import { useAccentColor } from "@/src/shared/theme/useAccentColor";
 import { Button } from "@/src/shared/ui/Button";
 import { Screen } from "@/src/shared/ui/Screen";
 import { Ionicons } from "@expo/vector-icons";
@@ -36,6 +37,7 @@ const PROMISES: Promise[] = [
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const accent = useAccentColor();
 
   return (
     <Screen>
@@ -79,7 +81,7 @@ export default function WelcomeScreen() {
               className="flex-row items-start gap-4 p-4 rounded-2xl bg-surface border border-river-100"
             >
               <View className="h-11 w-11 rounded-2xl bg-river-50 items-center justify-center">
-                <Ionicons name={p.icon} size={22} color="#2F6D6E" />
+                <Ionicons name={p.icon} size={22} color={accent} />
               </View>
               <View className="flex-1">
                 <Text className="text-base font-semibold text-ink mb-1">

@@ -1,4 +1,5 @@
 import { cn } from "@/src/shared/lib/cn";
+import { useAccentColor } from "@/src/shared/theme/useAccentColor";
 import { Ionicons } from "@expo/vector-icons";
 import type { ComponentProps, ReactNode } from "react";
 import { Text, View } from "react-native";
@@ -35,13 +36,6 @@ const TONE_BG: Record<Tone, string> = {
   ink: "bg-ink",
 };
 
-const TONE_CONTENT: Record<Tone, string> = {
-  river: "#2F6D6E",
-  sand: "#2F6D6E",
-  white: "#2F6D6E",
-  ink: "#FFFFFF",
-};
-
 /**
  * Avatar/bubble unificado. Usado para iniciales de usuario, iconos de
  * categoría, burbujas de ejercicios, etc. Reemplaza los
@@ -57,7 +51,9 @@ export function Avatar({
   contentColor,
 }: AvatarProps) {
   const dims = SIZE_MAP[size];
-  const color = contentColor ?? TONE_CONTENT[tone];
+  // Acento theme-aware (3.1): el teal profundo no contrasta en oscuro.
+  const accent = useAccentColor();
+  const color = contentColor ?? (tone === "ink" ? "#FFFFFF" : accent);
 
   return (
     <View

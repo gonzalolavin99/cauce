@@ -1,5 +1,6 @@
 import { nudgeSentence } from "@/src/features/mood/engine/patterns";
 import { useProactiveNudge } from "@/src/features/mood/hooks/useProactiveNudge";
+import { useAccentColor } from "@/src/shared/theme/useAccentColor";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
@@ -12,6 +13,7 @@ import { Pressable, Text, View } from "react-native";
  */
 export function ProactiveNudge() {
   const router = useRouter();
+  const accent = useAccentColor();
   const { nudge } = useProactiveNudge();
 
   if (!nudge) return null;
@@ -33,7 +35,7 @@ export function ProactiveNudge() {
         importantForAccessibility="no-hide-descendants"
         className="w-11 h-11 rounded-2xl bg-surface items-center justify-center mr-3 border border-river-100"
       >
-        <Ionicons name="water-outline" size={20} color="#2F6D6E" />
+        <Ionicons name="water-outline" size={20} color={accent} />
       </View>
       <View className="flex-1">
         <Text className="text-sm text-ink leading-5">{nudgeSentence(nudge)}</Text>

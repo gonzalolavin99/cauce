@@ -1,16 +1,17 @@
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { useRecommendedExercises } from "@/src/features/exercises/hooks/useRecommendedExercises";
+import { ProactiveNudge } from "@/src/features/mood/components/ProactiveNudge";
+import { StreakCard } from "@/src/features/mood/components/StreakCard";
 import {
     MOOD_EMOJI,
     MOOD_LABELS,
     type MoodValue,
 } from "@/src/features/mood/data/options";
-import { ProactiveNudge } from "@/src/features/mood/components/ProactiveNudge";
-import { StreakCard } from "@/src/features/mood/components/StreakCard";
 import { useMoodLogs } from "@/src/features/mood/hooks/useMoodLogs";
 import { useProfile } from "@/src/features/profile/hooks/useProfile";
 import { REFRESH_TINT, useRefresh } from "@/src/shared/hooks/useRefresh";
 import { useReducedMotion } from "@/src/shared/lib/useReducedMotion";
+import { useAccentColor } from "@/src/shared/theme/useAccentColor";
 import { Card } from "@/src/shared/ui/Card";
 import { EmptyState } from "@/src/shared/ui/EmptyState";
 import { Screen } from "@/src/shared/ui/Screen";
@@ -76,6 +77,7 @@ function HomeScreen() {
   const { data: moodLogs } = useMoodLogs(1);
   const lastMood = moodLogs?.[0];
   const reduceMotion = useReducedMotion();
+  const accent = useAccentColor();
   const { refreshing, onRefresh } = useRefresh();
 
   const displayName = useMemo(() => {
@@ -230,7 +232,7 @@ function HomeScreen() {
                     : "Anota tu estado en segundos"}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#2E5F60" />
+              <Ionicons name="chevron-forward" size={20} color={accent} />
             </View>
           </Card>
 
@@ -270,7 +272,7 @@ function HomeScreen() {
                   Conversa con el asistente · IA, no es terapia
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#2E5F60" />
+              <Ionicons name="chevron-forward" size={20} color={accent} />
             </View>
           </Card>
         </StaggerItem>
@@ -324,7 +326,7 @@ function HomeScreen() {
               >
                 <View className="flex-row items-start p-4">
                   <View className="w-10 h-10 rounded-xl bg-surface items-center justify-center mr-3">
-                    <Ionicons name="leaf" size={18} color="#4E8B8C" />
+                    <Ionicons name="leaf" size={18} color={accent} />
                   </View>
                   <View className="flex-1 pr-3">
                     <Text className="text-base font-semibold text-river-900">

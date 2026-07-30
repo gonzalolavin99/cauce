@@ -1,9 +1,10 @@
 import {
-  CALMING_INPUTS,
-  TRIGGERING_INPUTS,
+    CALMING_INPUTS,
+    TRIGGERING_INPUTS,
 } from "@/src/features/onboarding/data/options";
 import { useOnboardingStore } from "@/src/features/onboarding/store";
 import { useSaveOnboarding } from "@/src/features/profile/hooks/useProfile";
+import { useAccentColor } from "@/src/shared/theme/useAccentColor";
 import { Button } from "@/src/shared/ui/Button";
 import { ChipSelector } from "@/src/shared/ui/ChipSelector";
 import { ProgressDots } from "@/src/shared/ui/ProgressDots";
@@ -16,6 +17,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 
 export default function PreferencesScreen() {
   const router = useRouter();
+  const accent = useAccentColor();
   const {
     diagnoses,
     calming_inputs,
@@ -74,7 +76,7 @@ export default function PreferencesScreen() {
             hitSlop={12}
             className="flex-row items-center gap-1 active:opacity-60"
           >
-            <Ionicons name="chevron-back" size={18} color="#2F6D6E" />
+            <Ionicons name="chevron-back" size={18} color={accent} />
             <Text className="text-sm text-river-700 font-medium">Atrás</Text>
           </Pressable>
           <ProgressDots total={3} current={2} />

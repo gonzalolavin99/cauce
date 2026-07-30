@@ -1,3 +1,4 @@
+import { useRiverColor } from "@/src/shared/theme/useRiverColor";
 import { useEffect, useRef } from "react";
 import { Animated, Easing, View } from "react-native";
 
@@ -15,6 +16,7 @@ export function BreathingCircle({
   animate,
 }: BreathingCircleProps) {
   const scale = useRef(new Animated.Value(targetScale)).current;
+  const fill = useRiverColor(500);
 
   useEffect(() => {
     if (animate) {
@@ -39,7 +41,7 @@ export function BreathingCircle({
           width: 140,
           height: 140,
           borderRadius: 70,
-          backgroundColor: "#4E8B8C",
+          backgroundColor: fill,
           transform: [{ scale }],
           opacity: 0.85,
         }}

@@ -19,20 +19,22 @@ export function ProgressDots({ total, current }: ProgressDotsProps) {
       {Array.from({ length: total }).map((_, i) => {
         const state =
           i < current ? "past" : i === current ? "current" : "future";
-        const bg =
+        // Clases de la paleta (theme-aware): los hex fijos anteriores no se
+        // adaptaban al modo oscuro.
+        const bgClass =
           state === "current"
-            ? "#4E8B8C"
+            ? "bg-river-500"
             : state === "past"
-            ? "#A5CACB"
-            : "#D6E7E7";
+            ? "bg-river-300"
+            : "bg-river-100";
         return (
           <View
             key={i}
+            className={bgClass}
             style={{
               width: state === "current" ? 20 : 6,
               height: 6,
               borderRadius: 3,
-              backgroundColor: bg,
             }}
           />
         );

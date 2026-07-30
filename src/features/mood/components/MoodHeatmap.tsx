@@ -1,12 +1,13 @@
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { MOOD_LABELS, type MoodValue } from "@/src/features/mood/data/options";
 import {
-  buildHeatmap,
-  type HeatmapCell,
-  type HeatmapLog,
+    buildHeatmap,
+    type HeatmapCell,
+    type HeatmapLog,
 } from "@/src/features/mood/engine/heatmap";
 import { MOOD_COLOR } from "@/src/features/mood/engine/insights";
 import { supabase } from "@/src/shared/lib/supabase";
+import { useAccentColor } from "@/src/shared/theme/useAccentColor";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -41,6 +42,7 @@ function formatKey(key: string): string {
  */
 export function MoodHeatmap() {
   const { user } = useAuth();
+  const accent = useAccentColor();
   const [selected, setSelected] = useState<HeatmapCell | null>(null);
 
   const { data: logs } = useQuery<HeatmapLog[]>({
@@ -117,7 +119,7 @@ export function MoodHeatmap() {
                     backgroundColor: cellColor(cell),
                     borderWidth:
                       selected?.key === cell.key && !cell.future ? 1.5 : 0,
-                    borderColor: "#2F6D6E",
+                    borderColor: accent,
                   }}
                 />
               ))}

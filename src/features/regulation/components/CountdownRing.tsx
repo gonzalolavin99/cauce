@@ -1,3 +1,4 @@
+import { useRiverColor } from "@/src/shared/theme/useRiverColor";
 import { Text, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 
@@ -21,6 +22,8 @@ export function CountdownRing({
   total,
   size = 72,
 }: CountdownRingProps) {
+  const trackColor = useRiverColor(100);
+  const progressColor = useRiverColor(700);
   const stroke = 5;
   const r = (size - stroke) / 2;
   const cx = size / 2;
@@ -43,7 +46,7 @@ export function CountdownRing({
           cx={cx}
           cy={cy}
           r={r}
-          stroke="#E7EFEF"
+          stroke={trackColor}
           strokeWidth={stroke}
           fill="none"
         />
@@ -52,7 +55,7 @@ export function CountdownRing({
           cx={cx}
           cy={cy}
           r={r}
-          stroke="#2F6D6E"
+          stroke={progressColor}
           strokeWidth={stroke}
           fill="none"
           strokeLinecap="round"

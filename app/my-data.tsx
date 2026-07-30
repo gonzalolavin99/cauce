@@ -1,32 +1,33 @@
-import { showAlert } from "@/src/shared/ui/alert";
 import {
-  CONSENT_DESCRIPTIONS,
-  CONSENT_LABELS,
-  OPTIONAL_CONSENTS,
-  REQUIRED_CONSENTS,
-  PRIVACY_POLICY_VERSION,
+    CONSENT_DESCRIPTIONS,
+    CONSENT_LABELS,
+    OPTIONAL_CONSENTS,
+    PRIVACY_POLICY_VERSION,
+    REQUIRED_CONSENTS,
 } from "@/src/features/privacy/constants";
 import {
-  useConsents,
-  useRecordConsent,
+    useConsents,
+    useRecordConsent,
 } from "@/src/features/privacy/hooks/useConsents";
 import { useMyDataExport } from "@/src/features/privacy/hooks/useMyDataExport";
+import { useRiverColor } from "@/src/shared/theme/useRiverColor";
+import { showAlert } from "@/src/shared/ui/alert";
 import { Button } from "@/src/shared/ui/Button";
 import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
 import { SectionHeader } from "@/src/shared/ui/SectionHeader";
 import type { ConsentType } from "@/src/types/database.types";
 import type { Ionicons } from "@expo/vector-icons";
-import type { ComponentProps } from "react";
 import { useRouter } from "expo-router";
+import type { ComponentProps } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Share,
-  Switch,
-  Text,
-  View,
+    ActivityIndicator,
+    Pressable,
+    ScrollView,
+    Share,
+    Switch,
+    Text,
+    View,
 } from "react-native";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
@@ -239,6 +240,8 @@ function ConsentRow({
   onToggle,
   onRevoke,
 }: ConsentRowProps) {
+  const trackOff = useRiverColor(100);
+  const trackOn = useRiverColor(500);
   return (
     <View className="mb-3 p-4 rounded-2xl bg-surface border border-river-100">
       <View className="flex-row items-start justify-between">
@@ -271,7 +274,7 @@ function ConsentRow({
           <Switch
             value={granted}
             onValueChange={onToggle}
-            trackColor={{ false: "#D6E7E7", true: "#4E8B8C" }}
+            trackColor={{ false: trackOff, true: trackOn }}
             thumbColor="#FFFFFF"
           />
         )}

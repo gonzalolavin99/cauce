@@ -1,14 +1,15 @@
+import { cn } from "@/src/shared/lib/cn";
 import { useReducedMotion } from "@/src/shared/lib/useReducedMotion";
 import { useEffect } from "react";
 import type { DimensionValue } from "react-native";
 import { View } from "react-native";
 import Animated, {
-  Easing,
-  cancelAnimation,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
+    Easing,
+    cancelAnimation,
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withTiming,
 } from "react-native-reanimated";
 
 interface SkeletonProps {
@@ -52,11 +53,8 @@ export function Skeleton({
 
   return (
     <Animated.View
-      className={className}
-      style={[
-        { width, height, borderRadius: radius, backgroundColor: "#E7EFEF" },
-        animStyle,
-      ]}
+      className={cn("bg-river-100", className)}
+      style={[{ width, height, borderRadius: radius }, animStyle]}
     />
   );
 }

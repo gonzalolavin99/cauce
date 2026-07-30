@@ -1,4 +1,3 @@
-import { showAlert } from "@/src/shared/ui/alert";
 import { detectCrisis } from "@/src/features/ai-advisor/engine/crisis";
 import {
     useActiveConversation,
@@ -35,6 +34,8 @@ import { cn } from "@/src/shared/lib/cn";
 import { useReducedMotion } from "@/src/shared/lib/useReducedMotion";
 import { useAccentColor } from "@/src/shared/theme/useAccentColor";
 import { usePlaceholderColor } from "@/src/shared/theme/usePlaceholderColor";
+import { useRiverColor } from "@/src/shared/theme/useRiverColor";
+import { showAlert } from "@/src/shared/ui/alert";
 import { Button } from "@/src/shared/ui/Button";
 import { EmptyState } from "@/src/shared/ui/EmptyState";
 import { PageHeader } from "@/src/shared/ui/PageHeader";
@@ -42,19 +43,10 @@ import { Screen } from "@/src/shared/ui/Screen";
 import { CardSkeleton } from "@/src/shared/ui/Skeleton";
 import { withErrorBoundary } from "@/src/shared/ui/withErrorBoundary";
 import { Ionicons } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { useQueryClient } from "@tanstack/react-query";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import Animated, {
-    FadeInDown,
-    useAnimatedStyle,
-    useSharedValue,
-    withDelay,
-    withRepeat,
-    withSequence,
-    withTiming,
-} from "react-native-reanimated";
 import {
     ActivityIndicator,
     KeyboardAvoidingView,
@@ -65,6 +57,15 @@ import {
     TextInput,
     View,
 } from "react-native";
+import Animated, {
+    FadeInDown,
+    useAnimatedStyle,
+    useSharedValue,
+    withDelay,
+    withRepeat,
+    withSequence,
+    withTiming,
+} from "react-native-reanimated";
 
 // Quick replies (7.2.2): atajos para bajar la fricción de escribir.
 // Starters cuando aún no hay conversación; seguimientos tras una respuesta.
@@ -646,16 +647,30 @@ function ChatWelcome() {
  */
 function TypingDots() {
   const reduceMotion = useReducedMotion();
+  const dotColor = useRiverColor(500);
   return (
     <View className="flex-row items-center gap-1.5">
       {[0, 1, 2].map((i) => (
-        <TypingDot key={i} delay={i * 180} animate={!reduceMotion} />
+        <TypingDot
+          key={i}
+          delay={i * 180}
+          animate={!reduceMotion}
+          color={dotColor}
+        />
       ))}
     </View>
   );
 }
 
-function TypingDot({ delay, animate }: { delay: number; animate: boolean }) {
+function TypingDot({
+  delay,
+  animate,
+  color,
+}: {
+  delay: number;
+  animate: boolean;
+  color: string;
+}) {
   const opacity = useSharedValue(0.35);
 
   useEffect(() => {
@@ -679,7 +694,7 @@ function TypingDot({ delay, animate }: { delay: number; animate: boolean }) {
     <Animated.View
       style={[
         style,
-        { width: 8, height: 8, borderRadius: 4, backgroundColor: "#4E8B8C" },
+        { width: 8, height: 8, borderRadius: 4, backgroundColor: color },
       ]}
     />
   );

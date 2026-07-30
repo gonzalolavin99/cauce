@@ -1,5 +1,3 @@
-import { showAlert } from "@/src/shared/ui/alert";
-import { showToast } from "@/src/shared/ui/toast";
 import {
     ENERGY_OPTIONS,
     MOOD_EMOJI,
@@ -12,14 +10,20 @@ import {
     useMoodLogs,
 } from "@/src/features/mood/hooks/useMoodLogs";
 import { cn } from "@/src/shared/lib/cn";
+import { useReducedMotion } from "@/src/shared/lib/useReducedMotion";
 import { usePlaceholderColor } from "@/src/shared/theme/usePlaceholderColor";
+import { showAlert } from "@/src/shared/ui/alert";
 import { Button } from "@/src/shared/ui/Button";
+import { EmptyState } from "@/src/shared/ui/EmptyState";
 import { PageHeader } from "@/src/shared/ui/PageHeader";
 import { Screen } from "@/src/shared/ui/Screen";
+import { SectionHeader } from "@/src/shared/ui/SectionHeader";
+import { CardSkeleton } from "@/src/shared/ui/Skeleton";
+import { showToast } from "@/src/shared/ui/toast";
 import { withErrorBoundary } from "@/src/shared/ui/withErrorBoundary";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     KeyboardAvoidingView,
     Platform,
@@ -29,6 +33,82 @@ import {
     TextInput,
     View,
 } from "react-native";
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withSpring,
+} from "react-native-reanimated";
+
+/**
+ * Tile seleccionable con micro-feedback: un "pop" de resorte muy suave al
+ * quedar activo (damping alto = sin rebote exagerado, acorde al tono calmo
+ * de la app). Se desactiva con reduce-motion.
+ */
+function SelectableTile({
+  active,
+  onPress,
+  label,
+  emoji,
+  accessibilityLabel,
+  style,
+}: {
+  active: boolean;
+  onPress: () => void;
+  label: string;
+  emoji?: string;
+  accessibilityLabel: string;
+  style?: object;
+}) {
+  const reduceMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      scale.value = 1;
+      return;
+    }
+    scale.value = withSpring(active ? 1.06 : 1, {
+      damping: 14,
+      stiffness: 260,
+    });
+  }, [active, reduceMotion, scale]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityState={{ selected: active }}
+        accessibilityLabel={accessibilityLabel}
+        className={cn(
+          "px-4 py-3 rounded-2xl border items-center",
+          active
+            ? "bg-river-500 border-river-500"
+            : "bg-surface border-river-100"
+        )}
+        style={style}
+      >
+        {emoji && (
+          <Text className="text-2xl mb-1" accessibilityElementsHidden>
+            {emoji}
+          </Text>
+        )}
+        <Text
+          className={cn(
+            "text-sm font-medium",
+            active ? "text-white" : "text-ink"
+          )}
+        >
+          {label}
+        </Text>
+      </Pressable>
+    </Animated.View>
+  );
+}
 
 function MoodScreen() {
   const router = useRouter();
@@ -85,81 +165,41 @@ function MoodScreen() {
         >
 
           {/* Mood grid */}
-          <Text className="text-xs uppercase text-ink/70 font-semibold mb-3 tracking-wider">
-            Estado
-          </Text>
-          <View className="flex-row flex-wrap gap-2 mb-8">
-            {MOOD_OPTIONS.map((opt) => {
-              const active = mood === opt.value;
-              return (
-                <Pressable
-                  key={opt.value}
-                  onPress={() => handleSelectMood(opt.value)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={`Estado: ${opt.label}`}
-                  className={cn(
-                    "px-4 py-3 rounded-2xl border items-center",
-                    active
-                      ? "bg-river-500 border-river-500"
-                      : "bg-surface border-river-100"
-                  )}
-                  style={{ minWidth: 96 }}
-                >
-                  <Text className="text-2xl mb-1" accessibilityElementsHidden>
-                    {opt.emoji}
-                  </Text>
-                  <Text
-                    className={cn(
-                      "text-sm font-medium",
-                      active ? "text-white" : "text-ink"
-                    )}
-                  >
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
+          <SectionHeader label="Estado" icon="happy-outline" />
+          <View className="flex-row flex-wrap gap-2 mb-2">
+            {MOOD_OPTIONS.map((opt) => (
+              <SelectableTile
+                key={opt.value}
+                active={mood === opt.value}
+                onPress={() => handleSelectMood(opt.value)}
+                label={opt.label}
+                emoji={opt.emoji}
+                accessibilityLabel={`Estado: ${opt.label}`}
+                style={{ minWidth: 96 }}
+              />
+            ))}
           </View>
+          {/* Confirmación suave de la selección — refuerzo sin presión */}
+          <Text className="text-sm text-river-700 mb-8 h-5">
+            {mood ? `Hoy estás ${MOOD_LABELS[mood].toLowerCase()}` : ""}
+          </Text>
 
           {/* Energy */}
-          <Text className="text-xs uppercase text-ink/70 font-semibold mb-3 tracking-wider">
-            Energía
-          </Text>
+          <SectionHeader label="Energía" icon="battery-half-outline" />
           <View className="flex-row flex-wrap gap-2 mb-8">
-            {ENERGY_OPTIONS.map((opt) => {
-              const active = energy === opt.value;
-              return (
-                <Pressable
-                  key={opt.value}
-                  onPress={() => handleSelectEnergy(opt.value)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={`Energía: ${opt.label}`}
-                  className={cn(
-                    "px-4 py-3 rounded-2xl border",
-                    active
-                      ? "bg-river-500 border-river-500"
-                      : "bg-surface border-river-100"
-                  )}
-                >
-                  <Text
-                    className={cn(
-                      "text-sm font-medium",
-                      active ? "text-white" : "text-ink"
-                    )}
-                  >
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
+            {ENERGY_OPTIONS.map((opt) => (
+              <SelectableTile
+                key={opt.value}
+                active={energy === opt.value}
+                onPress={() => handleSelectEnergy(opt.value)}
+                label={opt.label}
+                accessibilityLabel={`Energía: ${opt.label}`}
+              />
+            ))}
           </View>
 
           {/* Note */}
-          <Text className="text-xs uppercase text-ink/70 font-semibold mb-3 tracking-wider">
-            Nota (opcional)
-          </Text>
+          <SectionHeader label="Nota (opcional)" icon="pencil-outline" />
           <TextInput
             value={note}
             onChangeText={setNote}
@@ -200,13 +240,18 @@ function MoodScreen() {
             </View>
 
             {isLoading && (
-              <Text className="text-ink/70">Cargando...</Text>
+              <View className="gap-3">
+                <CardSkeleton />
+                <CardSkeleton />
+              </View>
             )}
 
             {!isLoading && (!logs || logs.length === 0) && (
-              <Text className="text-ink/70">
-                Todavía no registras tu estado.
-              </Text>
+              <EmptyState
+                icon="calendar-outline"
+                title="Todavía no registras tu estado"
+                description="Cuando anotes cómo estás, va a aparecer acá."
+              />
             )}
 
             {logs?.map((log) => {

@@ -261,10 +261,15 @@ oscuro es casi de salud, no estética.
 - [x] Props nativas que no pueden usar variables: hooks
   `usePlaceholderColor()` / `useAccentColor()` (inputs, PageHeader,
   EmptyState, chat, TabBar, halos de Screen, ToastHost).
-- [ ] Pasada fina pendiente: ~15 íconos decorativos con hex teal fijo
-  (`#2F6D6E`) en onboarding/regulate/support — legibles pero con menos
-  contraste en oscuro. Verificado en web (claro y oscuro); falta vista en
-  dispositivo nativo.
+- [x] Pasada fina (2026-07-30): todos los íconos/colores decorativos con hex
+  teal fijo migrados a `useAccentColor()` / `useRiverColor()` (nuevo hook
+  theme-aware para shades river en props nativas — `src/shared/theme/useRiverColor.ts`).
+  Cubre: onboarding, regulate (iconos + ondas done), support, ExerciseCard,
+  ProactiveNudge, StreakCard, VoiceToggle, CountdownRing, BreathingCircle,
+  MoodHeatmap, Avatar, TypingDots del chat, Switches de profile/my-data,
+  ProgressDots, Skeleton, chevrons del home. Quedan fijos a propósito:
+  `MOOD_COLOR` (data-viz semántica), `exportPlanPdf` (documento impreso),
+  InstallPrompt web (botón sólido con texto blanco, legible en ambos temas).
 
 ### 3.2 Skeleton loaders ✅ HECHO (2026-06-11)
 
@@ -312,8 +317,12 @@ reemplazado por 3 `CardSkeleton`.
 - [ ] Empty states con ilustraciones propias (estilo calmo, paleta river) en
   vez de solo ícono + texto.
 - [ ] Onboarding con ilustración por paso + indicador de progreso (dots).
+  (Los dots ya existen — `ProgressDots`; falta la ilustración por paso.)
 - [ ] Icono adaptativo **monocromo** para Android 13+ (themed icons).
-- [ ] Transición splash → app con fade (`SplashScreen.setOptions({ fade: true })`).
+  Requiere asset monocromo nuevo (el adaptive-icon actual es a color; reusarlo
+  se vería mal). Bloqueado por diseño de asset.
+- [x] Transición splash → app con fade (`SplashScreen.setOptions({ fade: true })`)
+  — hecho 2026-07-30.
 
 ### 3.8 Teclado y formularios
 
